@@ -1,0 +1,25 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.cursor/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files (never commit secrets)
+.env
+.env.*
+!.env*.example
+
+# Node / Next.js artifacts
+**/node_modules/
+**/.next/
+**/out/
+**/build/
+**/dist/
+**/coverage/
+**/*.tsbuildinfo
