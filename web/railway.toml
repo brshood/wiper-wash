@@ -1,0 +1,11 @@
+# Deploy this service with root directory set to `web` in Railway
+# (Settings → Service → Root Directory: web).
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm run start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"

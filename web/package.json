@@ -9,7 +9,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:zero": "node --env-file=.env scripts/zero-database.mjs"
   },
   "dependencies": {
     "mongodb": "^7.2.0",

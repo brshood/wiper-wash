@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getDb } from "@/lib/db";
+import { allowMongoInMemoryFallback } from "@/lib/mongodb-env";
 import { assignWorker, workOrders as seededOrders, type OrderStatus, workers } from "@/lib/wiper";
 
 export type OrderRecord = {
@@ -116,7 +117,9 @@ export async function listOrders() {
       .find({})
       .sort({ scheduledFor: 1, createdAt: 1 })
       .toArray()) as OrderRecord[];
-  } catch {
+  } catch (error) {
+    if (!allowMongoInMemoryFallback()) throw error;
+    console.warn("[wiper] listOrders: Mongo unavailable, using in-memory store.", error);
     return inMemoryStore().orders;
   }
 }
@@ -144,7 +147,9 @@ export async function createOrder(input: CreateOrderInput) {
   try {
     const db = await getDb();
     await db.collection<OrderRecord>("orders").insertOne(order);
-  } catch {
+  } catch (error) {
+    if (!allowMongoInMemoryFallback()) throw error;
+    console.warn("[wiper] createOrder: Mongo unavailable, using in-memory store.", error);
     inMemoryStore().orders.push(order);
   }
 
@@ -154,15 +159,16 @@ export async function createOrder(input: CreateOrderInput) {
 export async function updateOrderStatus(id: string, nextStatus: OrderStatus) {
   try {
     const db = await getDb();
-    const result = await db
-      .collection<OrderRecord>("orders")
-      .findOneAndUpdate(
-        { id },
-        { $set: { status: nextStatus, updatedAt: new Date().toISOString() } },
-        { returnDocument: "after" },
-      );
-    return result;
-  } catch {
+    const collection = db.collection<OrderRecord>("orders");
+    const update = await collection.updateOne(
+      { id },
+      { $set: { status: nextStatus, updatedAt: new Date().toISOString() } },
+    );
+    if (update.matchedCount === 0) return null;
+    return (await collection.findOne({ id })) as OrderRecord | null;
+  } catch (error) {
+    if (!allowMongoInMemoryFallback()) throw error;
+    console.warn("[wiper] updateOrderStatus: Mongo unavailable, using in-memory store.", error);
     const store = inMemoryStore();
     const order = store.orders.find((item) => item.id === id);
     if (!order) return null;
@@ -180,7 +186,9 @@ export async function listSubscriptions() {
       .find({})
       .sort({ createdAt: -1 })
       .toArray()) as SubscriptionRecord[];
-  } catch {
+  } catch (error) {
+    if (!allowMongoInMemoryFallback()) throw error;
+    console.warn("[wiper] listSubscriptions: Mongo unavailable, using in-memory store.", error);
     return inMemoryStore().subscriptions;
   }
 }
@@ -225,7 +233,9 @@ export async function createSubscription(input: CreateSubscriptionInput) {
     const db = await getDb();
     await db.collection<SubscriptionRecord>("subscriptions").insertOne(subscription);
     await db.collection<OrderRecord>("orders").insertMany(generatedOrders);
-  } catch {
+  } catch (error) {
+    if (!allowMongoInMemoryFallback()) throw error;
+    console.warn("[wiper] createSubscription: Mongo unavailable, using in-memory store.", error);
     const store = inMemoryStore();
     store.subscriptions.push(subscription);
     store.orders.push(...generatedOrders);
