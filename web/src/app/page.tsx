@@ -184,7 +184,7 @@ function WiperWave({
           alt="WIPER wave extension"
           className="h-auto w-full object-cover"
           height={578}
-          src="/api/reference/wiper7"
+          src="/pic_ref/wiper7.JPG"
           unoptimized
           width={1024}
         />
@@ -271,7 +271,7 @@ function HeroSection() {
                 alt="WIPER branded mobile car wash van"
                 className="hero-van-image h-[22rem] w-full object-contain object-center drop-shadow-[0_30px_34px_rgba(30,57,81,0.22)] sm:h-[34rem] sm:drop-shadow-[0_38px_46px_rgba(30,57,81,0.24)]"
                 height={1080}
-                src="/api/reference/wipervan2?v=2"
+                src="/pic_ref/wipervan2.png?v=2"
                 unoptimized
                 width={1920}
               />
@@ -291,7 +291,7 @@ function HeroSection() {
               alt="WIPER branded packaging mockup"
               className="rounded-[1rem] object-cover sm:rounded-[1.5rem]"
               height={578}
-              src="/api/reference/wiper9"
+              src="/pic_ref/wiper9.JPG"
               unoptimized
               width={1024}
             />

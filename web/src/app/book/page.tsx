@@ -248,7 +248,7 @@ export default function BookPage() {
           alt="WIPER booking ribbon pattern"
           className="h-full w-full object-cover"
           height={578}
-          src="/api/reference/wiper7"
+          src="/pic_ref/wiper7.JPG"
           unoptimized
           width={1024}
         />
@@ -438,7 +438,7 @@ export default function BookPage() {
                   alt="WIPER logo on navy background"
                   className="rounded-[2rem]"
                   height={578}
-                  src="/api/reference/wiper3"
+                  src="/pic_ref/wiper3.JPG"
                   unoptimized
                   width={1024}
                 />

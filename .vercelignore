@@ -1,3 +1,4 @@
-pic_ref
+# Only ignore repo-root assets (not web/public/pic_ref used by the Next app).
+/pic_ref
 *.pdf
 .cursor
