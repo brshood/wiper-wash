@@ -14,7 +14,8 @@ export type ServiceOption = {
   price: number;
   durationMinutes: number;
   kind: ServiceKind;
-  polishOptions?: string[];
+  /** Stable ids for polish add-on choices (matches `polishOptionDefs`). */
+  polishOptionIds?: string[];
 };
 
 export type Worker = {
@@ -107,15 +108,15 @@ export const services: ServiceOption[] = [
     price: 60,
     durationMinutes: 90,
     kind: "single",
-    polishOptions: [
-      "Inner",
-      "Outer",
-      "Inner + outer",
-      "Frontal",
-      "Engine",
-      "Rings",
-      "Windshield",
-      "Single side glass",
+    polishOptionIds: [
+      "inner",
+      "outer",
+      "inner-outer",
+      "frontal",
+      "engine",
+      "rings",
+      "windshield",
+      "single-side-glass",
     ],
   },
   {
@@ -147,15 +148,135 @@ export const timeSlots = [
   "21:00 - 22:00",
 ];
 
-export const availableDays = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
+/** English weekday value sent to APIs; localized label for UI. */
+export const weekdayOptions: { value: string; label: Record<Locale, string> }[] = [
+  { value: "Sunday", label: { en: "Sunday", ar: "الأحد" } },
+  { value: "Monday", label: { en: "Monday", ar: "الإثنين" } },
+  { value: "Tuesday", label: { en: "Tuesday", ar: "الثلاثاء" } },
+  { value: "Wednesday", label: { en: "Wednesday", ar: "الأربعاء" } },
+  { value: "Thursday", label: { en: "Thursday", ar: "الخميس" } },
+  { value: "Friday", label: { en: "Friday", ar: "الجمعة" } },
+  { value: "Saturday", label: { en: "Saturday", ar: "السبت" } },
 ];
+
+export const availableDays = weekdayOptions.map((item) => item.value);
+
+export const polishOptionDefs: { id: string; label: Record<Locale, string> }[] = [
+  { id: "inner", label: { en: "Inner", ar: "داخلي" } },
+  { id: "outer", label: { en: "Outer", ar: "خارجي" } },
+  { id: "inner-outer", label: { en: "Inner + outer", ar: "داخلي + خارجي" } },
+  { id: "frontal", label: { en: "Frontal", ar: "أمامي" } },
+  { id: "engine", label: { en: "Engine", ar: "المحرك" } },
+  { id: "rings", label: { en: "Rings", ar: "الحلقات" } },
+  { id: "windshield", label: { en: "Windshield", ar: "الزجاج الأمامي" } },
+  { id: "single-side-glass", label: { en: "Single side glass", ar: "زجاج جانبي واحد" } },
+];
+
+export const bookCopy = {
+  back: { en: "Back", ar: "رجوع" },
+  /** Shown when UI is English — switches to Arabic. */
+  langSwitchToAr: { en: "العربية", ar: "العربية" },
+  /** Shown when UI is Arabic — switches to English. */
+  langSwitchToEn: { en: "English", ar: "English" },
+  choiceKicker: { en: "Get washed", ar: "احصل على غسيل" },
+  choiceTitle: { en: "What kind of wash do you need?", ar: "ما نوع الغسيل الذي تحتاجه؟" },
+  subscriptionCardTitle: { en: "Subscription", ar: "اشتراك" },
+  subscriptionCardBody: {
+    en: "Weekly wash, same selected day, monthly payment.",
+    ar: "غسيل أسبوعي، نفس اليوم المختار، دفع شهري.",
+  },
+  oneTimeCardTitle: { en: "One time", ar: "مرة واحدة" },
+  oneTimeCardBody: {
+    en: "Pick the service you want today and pay once.",
+    ar: "اختر الخدمة التي تريدها اليوم وادفع مرة واحدة.",
+  },
+  singleKicker: { en: "One time service", ar: "خدمة لمرة واحدة" },
+  singleTitle: { en: "Choose your service.", ar: "اختر خدمتك." },
+  polishKicker: { en: "Polish", ar: "تلميع" },
+  polishTitle: { en: "What type?", ar: "أي نوع؟" },
+  continue: { en: "Continue", ar: "متابعة" },
+  subscriptionKicker: { en: "Subscription", ar: "اشتراك" },
+  subscriptionHeroTitle: {
+    en: "Weekly inner and outer wash.",
+    ar: "غسيل داخلي وخارجي أسبوعي.",
+  },
+  subscriptionHeroBody: {
+    en: "Subscription is limited to inner and outer washes. You pay once per month, choose a weekly day and time window, and WIPER creates recurring work orders for the staff.",
+    ar: "الاشتراك مقتصر على الغسيل الداخلي والخارجي. تدفع مرة شهرياً، تختار يوماً أسبوعياً وفترة زمنية، ويقوم WIPER بإنشاء أوامر عمل متكررة للفريق.",
+  },
+  subscriptionTerms: {
+    en: "I agree to the monthly subscription terms.",
+    ar: "أوافق على شروط الاشتراك الشهري.",
+  },
+  detailsKicker: { en: "Final step", ar: "الخطوة الأخيرة" },
+  detailsTitle: { en: "Info, schedule, payment.", ar: "البيانات، الموعد، الدفع." },
+  placeholderName: { en: "Customer name *", ar: "اسم العميل *" },
+  placeholderPlate: { en: "Car plate number *", ar: "رقم اللوحة *" },
+  placeholderPhone: { en: "Phone *", ar: "الهاتف *" },
+  placeholderEmail: { en: "Email *", ar: "البريد الإلكتروني *" },
+  placeholderAddress: { en: "Address *", ar: "العنوان *" },
+  placeholderCarDetails: { en: "Car details", ar: "تفاصيل السيارة" },
+  placeholderNote: { en: "Note", ar: "ملاحظة" },
+  placeholderPromo: { en: "Promo code", ar: "رمز ترويجي" },
+  apply: { en: "Apply", ar: "تطبيق" },
+  promoInvalid: { en: "Promo code not valid.", ar: "رمز ترويجي غير صالح." },
+  promoAppliedLine: {
+    en: "{code} applied: -{discount}",
+    ar: "تم تطبيق {code}: -{discount}",
+  },
+  total: { en: "Total", ar: "الإجمالي" },
+  payNow: { en: "Pay now", ar: "ادفع الآن" },
+  processing: { en: "Processing...", ar: "جاري المعالجة..." },
+  payment: { en: "Payment", ar: "الدفع" },
+  customer: { en: "Customer", ar: "العميل" },
+  plate: { en: "Plate", ar: "اللوحة" },
+  service: { en: "Service", ar: "الخدمة" },
+  day: { en: "Day", ar: "اليوم" },
+  time: { en: "Time", ar: "الوقت" },
+  notSet: { en: "Not set", ar: "غير محدد" },
+  notSelected: { en: "Not selected", ar: "غير محدد" },
+  subtotal: { en: "Subtotal", ar: "المجموع الفرعي" },
+  promo: { en: "Promo", ar: "ترويجي" },
+  orderPlaced: { en: "Order placed", ar: "تم تأكيد الطلب" },
+  receiptBody: {
+    en: "Receipt {id} has been created. Confirmation details were sent to the email and number on file.",
+    ar: "تم إنشاء الإيصال {id}. تم إرسال تفاصيل التأكيد إلى البريد الإلكتروني والرقم المسجلين.",
+  },
+  done: { en: "Done", ar: "تم" },
+  errSubscription: { en: "Unable to create subscription.", ar: "تعذر إنشاء الاشتراك." },
+  errOrder: { en: "Unable to create order.", ar: "تعذر إنشاء الطلب." },
+  errGeneric: {
+    en: "Something went wrong while placing the booking.",
+    ar: "حدث خطأ أثناء إتمام الحجز.",
+  },
+  altRibbon: {
+    en: "WIPER booking ribbon pattern",
+    ar: "نمط شريط حجز WIPER",
+  },
+  altLogo: { en: "WIPER logo", ar: "شعار WIPER" },
+  altHome: { en: "WIPER home", ar: "الرئيسية WIPER" },
+  altSubscriptionVisual: {
+    en: "WIPER logo on navy background",
+    ar: "شعار WIPER على خلفية كحلية",
+  },
+  serviceIconOuter: { en: "OUT", ar: "خارجي" },
+  serviceIconInnerOuter: { en: "IN", ar: "د+خ" },
+  serviceIconVip: { en: "VIP", ar: "VIP" },
+  serviceIconPolish: { en: "POL", ar: "لم" },
+  serviceIconSub: { en: "SUB", ar: "شهر" },
+} as const;
+
+function fillBookTemplate(template: string, vars: Record<string, string>) {
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => vars[key] ?? "");
+}
+
+export function formatBookReceiptBody(locale: Locale, receiptId: string) {
+  return fillBookTemplate(bookCopy.receiptBody[locale], { id: receiptId });
+}
+
+export function formatPromoAppliedMessage(locale: Locale, code: string, discount: string) {
+  return fillBookTemplate(bookCopy.promoAppliedLine[locale], { code, discount });
+}
 
 export const workers: Worker[] = [
   {
@@ -228,8 +349,8 @@ export const promoCodes: PromoCode[] = [
   { code: "WELCOME15", kind: "percent", value: 15, active: true },
 ];
 
-export function formatQar(amount: number) {
-  return new Intl.NumberFormat("en-QA", {
+export function formatQar(amount: number, locale: Locale = "en") {
+  return new Intl.NumberFormat(locale === "ar" ? "ar-QA" : "en-QA", {
     style: "currency",
     currency: "QAR",
     maximumFractionDigits: 0,

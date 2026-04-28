@@ -4,29 +4,22 @@ import Link from "next/link";
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import {
-  availableDays,
+  bookCopy,
   calculatePrice,
   calculatePromoDiscount,
+  formatBookReceiptBody,
+  formatPromoAppliedMessage,
   formatQar,
   isSlotAvailable,
+  polishOptionDefs,
   services,
   timeSlots,
   type Locale,
   type ServiceKind,
+  weekdayOptions,
 } from "@/lib/wiper";
 
 type Step = "choice" | "single-service" | "subscription" | "polish" | "details";
-
-const polishOptions = [
-  "Inner",
-  "Outer",
-  "Inner + outer",
-  "Frontal",
-  "Engine",
-  "Rings",
-  "Windshield",
-  "Single side glass",
-];
 
 function ServiceIcon({ label, variant }: { label: string; variant?: "dark" }) {
   return (
@@ -59,6 +52,21 @@ function ServiceIcon({ label, variant }: { label: string; variant?: "dark" }) {
       </span>
     </div>
   );
+}
+
+function serviceCardAbbrev(serviceId: string, loc: Locale) {
+  switch (serviceId) {
+    case "outer":
+      return bookCopy.serviceIconOuter[loc];
+    case "inner-outer":
+      return bookCopy.serviceIconInnerOuter[loc];
+    case "vip":
+      return bookCopy.serviceIconVip[loc];
+    case "polish":
+      return bookCopy.serviceIconPolish[loc];
+    default:
+      return "";
+  }
 }
 
 function ChoiceIcon({ type }: { type: "subscription" | "single" }) {
@@ -105,7 +113,7 @@ export default function BookPage() {
   const [step, setStep] = useState<Step>("choice");
   const [kind, setKind] = useState<ServiceKind | null>(null);
   const [serviceId, setServiceId] = useState("outer");
-  const [polish, setPolish] = useState<string[]>([]);
+  const [polishIds, setPolishIds] = useState<string[]>([]);
   const [agreed, setAgreed] = useState(false);
   const [day, setDay] = useState("Sunday");
   const [slot, setSlot] = useState("10:00 - 11:00");
@@ -129,8 +137,8 @@ export default function BookPage() {
     () =>
       kind === "subscription"
         ? services.find((service) => service.id === "monthly")?.price ?? 0
-        : calculatePrice(serviceId, polish.length),
-    [kind, polish.length, serviceId],
+        : calculatePrice(serviceId, polishIds.length),
+    [kind, polishIds.length, serviceId],
   );
   const promoResult = useMemo(
     () => calculatePromoDiscount(amount, appliedPromo),
@@ -199,7 +207,8 @@ export default function BookPage() {
         });
 
         if (!response.ok) {
-          throw new Error("Unable to create subscription.");
+          setPromoMessage(bookCopy.errSubscription[locale]);
+          return;
         }
       } else {
         const response = await fetch("/api/orders", {
@@ -221,16 +230,15 @@ export default function BookPage() {
         });
 
         if (!response.ok) {
-          throw new Error("Unable to create order.");
+          setPromoMessage(bookCopy.errOrder[locale]);
+          return;
         }
       }
 
       setReceiptId(`WPR-${Date.now().toString().slice(-6)}`);
       setPaid(true);
-    } catch (error) {
-      setPromoMessage(
-        error instanceof Error ? error.message : "Something went wrong while placing the booking.",
-      );
+    } catch {
+      setPromoMessage(bookCopy.errGeneric[locale]);
     } finally {
       setSubmitting(false);
     }
@@ -245,7 +253,7 @@ export default function BookPage() {
       <div className="absolute -right-40 bottom-20 h-80 w-[40rem] rounded-full bg-[#449883]/14 blur-3xl" />
       <div className="wiper7-band wiper7-band-book absolute inset-x-0 bottom-0 z-0">
         <Image
-          alt="WIPER booking ribbon pattern"
+          alt={bookCopy.altRibbon[locale]}
           className="h-full w-full object-cover"
           height={578}
           src="/pic_ref/wiper7.JPG"
@@ -254,9 +262,9 @@ export default function BookPage() {
         />
       </div>
       <header className="relative z-10 mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="block w-28 sm:w-36" aria-label="WIPER home">
+        <Link href="/" className="block w-28 sm:w-36" aria-label={bookCopy.altHome[locale]}>
           <Image
-            alt="WIPER logo"
+            alt={bookCopy.altLogo[locale]}
             className="h-auto w-full"
             height={249}
             priority
@@ -271,7 +279,7 @@ export default function BookPage() {
               onClick={goBack}
               type="button"
             >
-              Back
+              {bookCopy.back[locale]}
             </button>
           )}
           <button
@@ -279,7 +287,7 @@ export default function BookPage() {
             onClick={() => setLocale(locale === "en" ? "ar" : "en")}
             type="button"
           >
-            {locale === "en" ? "AR" : "EN"}
+            {locale === "en" ? bookCopy.langSwitchToAr[locale] : bookCopy.langSwitchToEn[locale]}
           </button>
         </div>
       </header>
@@ -303,10 +311,10 @@ export default function BookPage() {
           {step === "choice" && (
             <section className="mobile-fit-step w-full text-center">
               <p className="text-xs font-black uppercase tracking-[0.38em] text-[#FF007D]">
-                Get washed
+                {bookCopy.choiceKicker[locale]}
               </p>
               <h1 className="mx-auto mt-2 max-w-3xl text-4xl font-black leading-none tracking-[-0.06em] sm:text-7xl">
-                What kind of wash do you need?
+                {bookCopy.choiceTitle[locale]}
               </h1>
               <div className="mobile-fit-grid mx-auto mt-6 grid max-w-3xl grid-cols-2 gap-3 sm:mt-12 sm:gap-6">
                 <button
@@ -315,9 +323,11 @@ export default function BookPage() {
                   type="button"
                 >
                   <ChoiceIcon type="subscription" />
-                  <h2 className="mt-4 text-xl font-black sm:text-3xl">Subscription</h2>
+                  <h2 className="mt-4 text-xl font-black sm:text-3xl">
+                    {bookCopy.subscriptionCardTitle[locale]}
+                  </h2>
                   <p className="mt-2 text-xs leading-5 text-[#1E3951]/58 sm:text-base">
-                    Weekly wash, same selected day, monthly payment.
+                    {bookCopy.subscriptionCardBody[locale]}
                   </p>
                 </button>
                 <button
@@ -326,9 +336,9 @@ export default function BookPage() {
                   type="button"
                 >
                   <ChoiceIcon type="single" />
-                  <h2 className="mt-4 text-xl font-black sm:text-3xl">One time</h2>
+                  <h2 className="mt-4 text-xl font-black sm:text-3xl">{bookCopy.oneTimeCardTitle[locale]}</h2>
                   <p className="mt-2 text-xs leading-5 text-[#1E3951]/58 sm:text-base">
-                    Pick the service you want today and pay once.
+                    {bookCopy.oneTimeCardBody[locale]}
                   </p>
                 </button>
               </div>
@@ -339,24 +349,14 @@ export default function BookPage() {
             <section className="mobile-fit-step w-full">
               <div className="mx-auto max-w-3xl text-center">
                 <p className="text-xs font-black uppercase tracking-[0.38em] text-[#FF007D]">
-                  One time service
+                  {bookCopy.singleKicker[locale]}
                 </p>
                 <h1 className="mt-2 text-4xl font-black tracking-[-0.06em] sm:text-7xl">
-                  Choose your service.
+                  {bookCopy.singleTitle[locale]}
                 </h1>
               </div>
               <div className="mobile-fit-grid mx-auto mt-4 grid max-w-3xl grid-cols-2 gap-3 sm:mt-6">
-                {activeServices.map((service) => {
-                  const icon =
-                    service.id === "outer"
-                      ? "OUT"
-                      : service.id === "inner-outer"
-                        ? "IN"
-                        : service.id === "vip"
-                          ? "VIP"
-                          : "POL";
-
-                  return (
+                {activeServices.map((service) => (
                   <button
                     key={service.id}
                     type="button"
@@ -370,7 +370,7 @@ export default function BookPage() {
                         : "border-[#1E3951]/10"
                     }`}
                   >
-                    <ServiceIcon label={icon} />
+                    <ServiceIcon label={serviceCardAbbrev(service.id, locale)} />
                     <h3 className="mt-2 text-lg font-black text-[#1E3951] sm:text-xl">
                       {service.label[locale]}
                     </h3>
@@ -378,11 +378,10 @@ export default function BookPage() {
                       {service.description[locale]}
                     </p>
                     <p className="mt-2 text-lg font-black text-[#FF007D] sm:text-xl">
-                      {formatQar(service.price)}
+                      {formatQar(service.price, locale)}
                     </p>
                   </button>
-                  );
-                })}
+                ))}
               </div>
             </section>
           )}
@@ -390,43 +389,43 @@ export default function BookPage() {
           {step === "polish" && (
             <section className="w-full text-center">
               <p className="text-xs font-black uppercase tracking-[0.38em] text-[#FF007D]">
-                Polish
+                {bookCopy.polishKicker[locale]}
               </p>
               <h1 className="mt-2 text-4xl font-black tracking-[-0.06em] sm:text-7xl">
-                What type?
+                {bookCopy.polishTitle[locale]}
               </h1>
               <div className="mx-auto mt-5 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-                {polishOptions.map((option) => (
+                {polishOptionDefs.map((option) => (
                   <label
-                    key={option}
-                    className={`flex min-h-16 items-center gap-2 rounded-2xl border p-3 text-left text-xs font-black sm:min-h-24 sm:text-sm ${
-                      polish.includes(option)
+                    key={option.id}
+                    className={`flex min-h-16 items-center gap-2 rounded-2xl border p-3 text-start text-xs font-black sm:min-h-24 sm:text-sm ${
+                      polishIds.includes(option.id)
                         ? "border-[#FF007D] bg-[#FF007D]/10"
                         : "border-[#1E3951]/10 bg-white"
                     }`}
                   >
                     <input
-                      checked={polish.includes(option)}
+                      checked={polishIds.includes(option.id)}
                       onChange={(event) =>
-                        setPolish((items) =>
+                        setPolishIds((items) =>
                           event.target.checked
-                            ? [...items, option]
-                            : items.filter((item) => item !== option),
+                            ? [...items, option.id]
+                            : items.filter((item) => item !== option.id),
                         )
                       }
                       type="checkbox"
                     />
-                    <span>{option}</span>
+                    <span>{option.label[locale]}</span>
                   </label>
                 ))}
               </div>
               <button
                 className="focus-ring mt-5 rounded-full bg-[#FF007D] px-8 py-4 text-sm font-black uppercase tracking-[0.2em] text-white disabled:opacity-40"
-                disabled={polish.length === 0}
+                disabled={polishIds.length === 0}
                 onClick={() => setStep("details")}
                 type="button"
               >
-                Continue
+                {bookCopy.continue[locale]}
               </button>
             </section>
           )}
@@ -435,7 +434,7 @@ export default function BookPage() {
             <section className="mx-auto grid max-w-5xl items-center gap-4 sm:gap-8 lg:grid-cols-[0.9fr_1.1fr]">
               <div className="hidden overflow-hidden rounded-[2.5rem] border border-[#1E3951]/10 bg-white p-4 shadow-[0_24px_70px_rgba(30,57,81,0.12)] sm:block">
                 <Image
-                  alt="WIPER logo on navy background"
+                  alt={bookCopy.altSubscriptionVisual[locale]}
                   className="rounded-[2rem]"
                   height={578}
                   src="/pic_ref/wiper3.JPG"
@@ -443,26 +442,24 @@ export default function BookPage() {
                   width={1024}
                 />
               </div>
-              <div className="rounded-[2rem] bg-white/90 p-5 text-center shadow-[0_24px_70px_rgba(30,57,81,0.10)] backdrop-blur sm:p-8 sm:text-left">
-                <ServiceIcon label="SUB" variant="dark" />
+              <div className="rounded-[2rem] bg-white/90 p-5 text-center shadow-[0_24px_70px_rgba(30,57,81,0.10)] backdrop-blur sm:p-8 sm:text-start">
+                <ServiceIcon label={bookCopy.serviceIconSub[locale]} variant="dark" />
                 <p className="mt-5 text-xs font-black uppercase tracking-[0.38em] text-[#FF007D]">
-                  Subscription
+                  {bookCopy.subscriptionKicker[locale]}
                 </p>
                 <h1 className="mt-2 text-4xl font-black leading-none tracking-[-0.06em] sm:text-7xl">
-                  Weekly inner and outer wash.
+                  {bookCopy.subscriptionHeroTitle[locale]}
                 </h1>
                 <p className="mt-4 text-sm leading-6 text-[#1E3951]/62 sm:text-lg sm:leading-8">
-                  Subscription is limited to inner and outer washes. You pay
-                  once per month, choose a weekly day and time window, and WIPER
-                  creates recurring work orders for the staff.
+                  {bookCopy.subscriptionHeroBody[locale]}
                 </p>
-                <label className="mt-4 flex items-center gap-3 rounded-2xl bg-[#f7f7f6] p-4 text-left text-sm font-bold">
+                <label className="mt-4 flex items-center gap-3 rounded-2xl bg-[#f7f7f6] p-4 text-start text-sm font-bold">
                   <input
                     checked={agreed}
                     onChange={(event) => setAgreed(event.target.checked)}
                     type="checkbox"
                   />
-                  I agree to the monthly subscription terms.
+                  {bookCopy.subscriptionTerms[locale]}
                 </label>
                 <button
                   className="focus-ring mt-6 rounded-full bg-[#FF007D] px-8 py-4 text-sm font-black uppercase tracking-[0.22em] text-white disabled:opacity-40"
@@ -470,7 +467,7 @@ export default function BookPage() {
                   onClick={() => setStep("details")}
                   type="button"
                 >
-                  Continue
+                  {bookCopy.continue[locale]}
                 </button>
               </div>
             </section>
@@ -480,10 +477,10 @@ export default function BookPage() {
             <section className="mobile-fit-step w-full">
               <div className="mx-auto max-w-3xl text-center">
                 <p className="text-xs font-black uppercase tracking-[0.38em] text-[#FF007D]">
-                  Final step
+                  {bookCopy.detailsKicker[locale]}
                 </p>
                 <h1 className="mt-2 text-4xl font-black tracking-[-0.06em] sm:text-7xl">
-                  Info, schedule, payment.
+                  {bookCopy.detailsTitle[locale]}
                 </h1>
               </div>
               <div className="mobile-fit-grid mt-3 grid gap-2 lg:grid-cols-[1fr_360px]">
@@ -491,21 +488,21 @@ export default function BookPage() {
                   <div className="grid grid-cols-2 gap-2 sm:gap-4">
                     <input
                       className="focus-ring w-full rounded-2xl border-2 border-[#FF007D]/55 bg-[#f7f7f6] px-3 py-2.5 text-sm font-black text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
-                      placeholder="Customer name *"
+                      placeholder={bookCopy.placeholderName[locale]}
                       required
                       value={customerName}
                       onChange={(event) => setCustomerName(event.target.value)}
                     />
                     <input
                       className="focus-ring w-full rounded-2xl border-2 border-[#FF007D]/55 bg-[#f7f7f6] px-3 py-2.5 text-sm font-black uppercase text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
-                      placeholder="Car plate number *"
+                      placeholder={bookCopy.placeholderPlate[locale]}
                       required
                       value={plateNumber}
                       onChange={(event) => setPlateNumber(event.target.value.toUpperCase())}
                     />
                     <input
                       className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
-                      placeholder="Phone *"
+                      placeholder={bookCopy.placeholderPhone[locale]}
                       required
                       type="tel"
                       value={phone}
@@ -513,7 +510,7 @@ export default function BookPage() {
                     />
                     <input
                       className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
-                      placeholder="Email *"
+                      placeholder={bookCopy.placeholderEmail[locale]}
                       required
                       type="email"
                       value={email}
@@ -521,20 +518,20 @@ export default function BookPage() {
                     />
                     <input
                       className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
-                      placeholder="Address *"
+                      placeholder={bookCopy.placeholderAddress[locale]}
                       required
                       value={address}
                       onChange={(event) => setAddress(event.target.value)}
                     />
                     <input
                       className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
-                      placeholder="Car details"
+                      placeholder={bookCopy.placeholderCarDetails[locale]}
                       value={carDetails}
                       onChange={(event) => setCarDetails(event.target.value)}
                     />
                     <input
                       className="focus-ring col-span-2 w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
-                      placeholder="Note"
+                      placeholder={bookCopy.placeholderNote[locale]}
                       value={note}
                       onChange={(event) => setNote(event.target.value)}
                     />
@@ -546,8 +543,10 @@ export default function BookPage() {
                       value={day}
                       onChange={(event) => setDay(event.target.value)}
                     >
-                      {availableDays.map((item) => (
-                        <option key={item}>{item}</option>
+                      {weekdayOptions.map((item) => (
+                        <option key={item.value} value={item.value}>
+                          {item.label[locale]}
+                        </option>
                       ))}
                     </select>
                     <select
@@ -566,7 +565,7 @@ export default function BookPage() {
                   <div className="mt-2 grid gap-2 sm:mt-4 sm:grid-cols-[1fr_130px]">
                     <input
                       className="focus-ring rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm uppercase sm:px-4 sm:py-4"
-                      placeholder="Promo code"
+                      placeholder={bookCopy.placeholderPromo[locale]}
                       value={promoInput}
                       onChange={(event) => setPromoInput(event.target.value.toUpperCase())}
                     />
@@ -576,17 +575,21 @@ export default function BookPage() {
                         const lookup = calculatePromoDiscount(amount, promoInput);
                         if (!lookup.promo) {
                           setAppliedPromo("");
-                          setPromoMessage("Promo code not valid.");
+                          setPromoMessage(bookCopy.promoInvalid[locale]);
                           return;
                         }
                         setAppliedPromo(lookup.promo.code);
                         setPromoMessage(
-                          `${lookup.promo.code} applied: -${formatQar(lookup.discount)}`,
+                          formatPromoAppliedMessage(
+                            locale,
+                            lookup.promo.code,
+                            formatQar(lookup.discount, locale),
+                          ),
                         );
                       }}
                       type="button"
                     >
-                      Apply
+                      {bookCopy.apply[locale]}
                     </button>
                   </div>
                   {promoMessage && (
@@ -599,8 +602,10 @@ export default function BookPage() {
                 <aside className="rounded-[1.4rem] bg-[#1E3951] p-3 text-white shadow-[0_24px_70px_rgba(30,57,81,0.18)] sm:hidden">
                   <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-white/70">Total</p>
-                      <strong className="text-2xl text-[#FBF3A7]">{formatQar(finalAmount)}</strong>
+                      <p className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-white/70">
+                        {bookCopy.total[locale]}
+                      </p>
+                      <strong className="text-2xl text-[#FBF3A7]">{formatQar(finalAmount, locale)}</strong>
                     </div>
                     <button
                       type="button"
@@ -608,58 +613,60 @@ export default function BookPage() {
                       onClick={completeBooking}
                       className="focus-ring rounded-full bg-[#FF007D] px-5 py-2.5 text-xs font-black uppercase tracking-[0.16em] disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      {submitting ? "Processing..." : "Pay now"}
+                      {submitting ? bookCopy.processing[locale] : bookCopy.payNow[locale]}
                     </button>
                   </div>
                 </aside>
 
                 <aside className="hidden rounded-[1.8rem] bg-[#1E3951] p-4 text-white shadow-[0_24px_70px_rgba(30,57,81,0.18)] sm:block sm:p-6">
-                  <h2 className="text-xl font-black sm:text-2xl">Payment</h2>
+                  <h2 className="text-xl font-black sm:text-2xl">{bookCopy.payment[locale]}</h2>
                   <div className="mt-4 space-y-2 text-xs text-white/70 sm:mt-6 sm:space-y-4 sm:text-sm">
                     <div className="flex justify-between gap-4">
-                      <span>Customer</span>
+                      <span>{bookCopy.customer[locale]}</span>
                       <strong className="text-white">
-                        {customerName || "Not set"}
+                        {customerName || bookCopy.notSet[locale]}
                       </strong>
                     </div>
                     <div className="flex justify-between gap-4">
-                      <span>Plate</span>
+                      <span>{bookCopy.plate[locale]}</span>
                       <strong className="text-white uppercase">
-                        {plateNumber || "Not set"}
+                        {plateNumber || bookCopy.notSet[locale]}
                       </strong>
                     </div>
                     <div className="flex justify-between gap-4">
-                      <span>Service</span>
+                      <span>{bookCopy.service[locale]}</span>
                       <strong className="text-white">
                         {kind === "subscription"
                           ? services.find((service) => service.id === "monthly")
                               ?.label[locale]
-                          : selectedService?.label[locale] ?? "Not selected"}
+                          : selectedService?.label[locale] ?? bookCopy.notSelected[locale]}
                       </strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>Day</span>
-                      <strong className="text-white">{day}</strong>
+                      <span>{bookCopy.day[locale]}</span>
+                      <strong className="text-white">
+                        {weekdayOptions.find((item) => item.value === day)?.label[locale] ?? day}
+                      </strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>Time</span>
+                      <span>{bookCopy.time[locale]}</span>
                       <strong className="text-white">{slot}</strong>
                     </div>
                     <div className="border-t border-white/10 pt-4">
                       <div className="mb-2 flex justify-between">
-                        <span>Subtotal</span>
-                        <strong className="text-white">{formatQar(amount)}</strong>
+                        <span>{bookCopy.subtotal[locale]}</span>
+                        <strong className="text-white">{formatQar(amount, locale)}</strong>
                       </div>
                       <div className="mb-2 flex justify-between">
-                        <span>Promo</span>
+                        <span>{bookCopy.promo[locale]}</span>
                         <strong className="text-[#FBF3A7]">
-                          -{formatQar(promoResult.discount)}
+                          -{formatQar(promoResult.discount, locale)}
                         </strong>
                       </div>
                       <div className="flex items-end justify-between">
-                        <span>Total</span>
+                        <span>{bookCopy.total[locale]}</span>
                         <strong className="text-3xl text-[#FBF3A7] sm:text-4xl">
-                          {formatQar(finalAmount)}
+                          {formatQar(finalAmount, locale)}
                         </strong>
                       </div>
                     </div>
@@ -670,7 +677,7 @@ export default function BookPage() {
                     onClick={completeBooking}
                     className="focus-ring mt-7 w-full rounded-full bg-[#FF007D] px-6 py-4 text-sm font-black uppercase tracking-[0.24em] disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    {submitting ? "Processing..." : "Pay now"}
+                    {submitting ? bookCopy.processing[locale] : bookCopy.payNow[locale]}
                   </button>
                 </aside>
               </div>
@@ -700,17 +707,16 @@ export default function BookPage() {
               </svg>
             </div>
             <h2 className="mt-6 text-4xl font-black tracking-[-0.04em]">
-              Order placed
+              {bookCopy.orderPlaced[locale]}
             </h2>
             <p className="mt-3 leading-7 text-[#1E3951]/62">
-              Receipt {receiptId} has been created. Confirmation details were
-              sent to the email and number on file.
+              {formatBookReceiptBody(locale, receiptId)}
             </p>
             <Link
               className="focus-ring mt-7 inline-flex rounded-full bg-[#1E3951] px-7 py-4 text-sm font-black uppercase tracking-[0.2em] text-white"
               href="/"
             >
-              Done
+              {bookCopy.done[locale]}
             </Link>
           </div>
         </div>
