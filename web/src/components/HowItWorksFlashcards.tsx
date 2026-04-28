@@ -9,6 +9,7 @@ type HowStep = {
 
 type HowItWorksFlashcardsProps = {
   steps: HowStep[];
+  stepLabel: (index: number, total: number) => string;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -38,7 +39,7 @@ function ProgressDots({
   );
 }
 
-export function HowItWorksFlashcards({ steps }: HowItWorksFlashcardsProps) {
+export function HowItWorksFlashcards({ steps, stepLabel }: HowItWorksFlashcardsProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -95,7 +96,7 @@ export function HowItWorksFlashcards({ steps }: HowItWorksFlashcardsProps) {
             <div className="flex items-center justify-between gap-6">
               <span className="text-6xl font-black text-[#FF007D]">01</span>
               <span className="rounded-full bg-[#1E3951] px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-white">
-                Step 1 of {steps.length}
+                {stepLabel(1, steps.length)}
               </span>
             </div>
             <h3 className="mt-8 text-4xl font-black tracking-[-0.04em] text-[#1E3951] sm:text-5xl">
@@ -129,7 +130,7 @@ export function HowItWorksFlashcards({ steps }: HowItWorksFlashcardsProps) {
                     0{index + 1}
                   </span>
                   <span className="rounded-full bg-[#1E3951] px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-white">
-                    Step {index + 1} of {steps.length}
+                    {stepLabel(index + 1, steps.length)}
                   </span>
                 </div>
                 <h3 className="mt-8 text-4xl font-black tracking-[-0.04em] text-[#1E3951] sm:text-5xl">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { toggleLocale, usePreferredLocale } from "@/lib/locale";
 
 type WorkerOrder = {
   id: string;
@@ -16,8 +17,10 @@ type WorkerOrder = {
 };
 
 export default function WorkerPage() {
+  const { locale, setLocale, isRtl } = usePreferredLocale("en");
   const [orders, setOrders] = useState<WorkerOrder[]>([]);
   const [active, setActive] = useState<string | undefined>(undefined);
+  const t = locale === "ar";
 
   useEffect(() => {
     async function loadOrders() {
@@ -59,7 +62,7 @@ export default function WorkerPage() {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#f7f7f6] text-[#1E3951]">
+    <main dir={isRtl ? "rtl" : "ltr"} className="min-h-screen overflow-hidden bg-[#f7f7f6] text-[#1E3951]">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_15%,rgba(255,0,125,0.12),transparent_28%),radial-gradient(circle_at_90%_20%,rgba(68,152,131,0.14),transparent_26%)]" />
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7">
         <Link href="/" className="block w-28 sm:w-36" aria-label="WIPER home">
@@ -72,19 +75,30 @@ export default function WorkerPage() {
             width={521}
           />
         </Link>
-        <span className="rounded-full border border-[#1E3951]/15 bg-white px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-[#1E3951]/70">
-          Worker
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            className="focus-ring rounded-full border border-[#1E3951]/15 bg-white px-4 py-2 text-xs font-bold"
+            onClick={() => setLocale(toggleLocale(locale))}
+            type="button"
+          >
+            {t ? "English" : "العربية"}
+          </button>
+          <span className="rounded-full border border-[#1E3951]/15 bg-white px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-[#1E3951]/70">
+            {t ? "عامل" : "Worker"}
+          </span>
+        </div>
       </header>
 
       <section className="mx-auto grid max-w-7xl gap-6 px-6 pb-16 lg:grid-cols-[380px_1fr]">
         <aside className="rounded-[2rem] border border-[#1E3951]/10 bg-white p-5 shadow-[0_18px_45px_rgba(30,57,81,0.08)]">
           <p className="text-sm font-black uppercase tracking-[0.35em] text-[#FF007D]">
-            Worker
+            {t ? "عامل" : "Worker"}
           </p>
-          <h1 className="mt-4 text-4xl font-black">Today&apos;s queue</h1>
+          <h1 className="mt-4 text-4xl font-black">{t ? "قائمة اليوم" : "Today&apos;s queue"}</h1>
           <p className="mt-3 text-[#1E3951]/62">
-            Accept jobs, start service, complete work, and upload photo proof.
+            {t
+              ? "اقبل المهام، ابدأ الخدمة، أكمل العمل، وارفع صور الإثبات."
+              : "Accept jobs, start service, complete work, and upload photo proof."}
           </p>
           <div className="mt-6 space-y-3">
             {orders.map((order) => (
@@ -114,7 +128,7 @@ export default function WorkerPage() {
             ))}
             {orders.length === 0 && (
               <div className="rounded-3xl border border-dashed border-[#1E3951]/20 bg-[#f7f7f6] p-4 text-sm font-bold text-[#1E3951]/58">
-                No open jobs in queue.
+                {t ? "لا توجد مهام مفتوحة حالياً." : "No open jobs in queue."}
               </div>
             )}
           </div>
@@ -123,7 +137,7 @@ export default function WorkerPage() {
         <section className="rounded-[2rem] border border-[#1E3951]/10 bg-white p-6 shadow-[0_18px_45px_rgba(30,57,81,0.08)] sm:p-8">
           {!current ? (
             <div className="grid min-h-80 place-items-center text-center">
-              <p className="text-lg font-black text-[#1E3951]/58">All queued jobs are completed.</p>
+              <p className="text-lg font-black text-[#1E3951]/58">{t ? "تم إنهاء جميع المهام." : "All queued jobs are completed."}</p>
             </div>
           ) : (
             <>
@@ -134,7 +148,7 @@ export default function WorkerPage() {
               </p>
               <h2 className="mt-3 text-4xl font-black">{current.service}</h2>
               <p className="mt-2 text-[#1E3951]/64">
-                {current.customer} | Plate {current.plateNumber}
+                {current.customer} | {t ? "اللوحة" : "Plate"} {current.plateNumber}
               </p>
             </div>
             <span className="h-fit rounded-full bg-[#f7f7f6] px-4 py-2 text-sm font-black capitalize">
@@ -144,10 +158,10 @@ export default function WorkerPage() {
 
           <div className="mt-7 grid gap-4 sm:grid-cols-3">
             {[
-              ["Location", current.zone],
-              ["Time window", current.slot],
-              ["Plate number", current.plateNumber],
-              ["Assigned worker", current.worker ?? "Take from queue"],
+              [t ? "الموقع" : "Location", current.zone],
+              [t ? "الفترة الزمنية" : "Time window", current.slot],
+              [t ? "رقم اللوحة" : "Plate number", current.plateNumber],
+              [t ? "العامل المعيّن" : "Assigned worker", current.worker ?? (t ? "اختر من الطابور" : "Take from queue")],
             ].map(([label, value]) => (
               <div key={label} className="rounded-3xl bg-[#f7f7f6] p-5">
                 <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#1E3951]/42">
@@ -160,15 +174,15 @@ export default function WorkerPage() {
 
           <div className="mt-7 grid gap-6 lg:grid-cols-2">
             <div className="rounded-[2rem] border border-[#1E3951]/10 bg-[#f7f7f6] p-6">
-              <h3 className="text-2xl font-black">Job checklist</h3>
+              <h3 className="text-2xl font-black">{t ? "قائمة تنفيذ المهمة" : "Job checklist"}</h3>
               <div className="mt-5 space-y-3">
                 {[
-                  "Confirm customer and car details",
-                  "Confirm plate number before accepting",
-                  "Capture before photos",
-                  "Complete selected service checklist",
-                  "Capture after photos",
-                  "Mark job complete to trigger rating email",
+                  t ? "تأكيد بيانات العميل والسيارة" : "Confirm customer and car details",
+                  t ? "تأكيد رقم اللوحة قبل القبول" : "Confirm plate number before accepting",
+                  t ? "التقاط صور قبل الخدمة" : "Capture before photos",
+                  t ? "إتمام خطوات الخدمة المختارة" : "Complete selected service checklist",
+                  t ? "التقاط صور بعد الخدمة" : "Capture after photos",
+                  t ? "إنهاء المهمة لإرسال تقييم تلقائياً" : "Mark job complete to trigger rating email",
                 ].map((item) => (
                   <label
                     key={item}
@@ -182,9 +196,9 @@ export default function WorkerPage() {
             </div>
 
             <div className="rounded-[2rem] border border-[#1E3951]/10 bg-[#f7f7f6] p-6">
-              <h3 className="text-2xl font-black">Photo proof</h3>
+              <h3 className="text-2xl font-black">{t ? "إثبات بالصور" : "Photo proof"}</h3>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                {["Before", "After"].map((label) => (
+                {[t ? "قبل" : "Before", t ? "بعد" : "After"].map((label) => (
                   <div
                     key={label}
                     className="grid min-h-44 place-items-center rounded-3xl border border-dashed border-[#1E3951]/20 bg-white text-center"
@@ -192,28 +206,29 @@ export default function WorkerPage() {
                     <div>
                       <p className="font-black">{label}</p>
                       <p className="mt-2 text-xs text-[#1E3951]/46">
-                        Upload image
+                        {t ? "رفع صورة" : "Upload image"}
                       </p>
                     </div>
                   </div>
                 ))}
               </div>
               <p className="mt-4 text-sm leading-6 text-[#1E3951]/56">
-                Uploaded photos are visible in admin and attached to the
-                completed work order.
+                {t
+                  ? "الصور المرفوعة تظهر في لوحة الإدارة وتُرفق مع أمر العمل المكتمل."
+                  : "Uploaded photos are visible in admin and attached to the completed work order."}
               </p>
             </div>
           </div>
 
           <div className="mt-7 flex flex-wrap gap-3">
-            {["Accept", "Start job", "Complete job"].map((action) => (
+            {[t ? "قبول" : "Accept", t ? "بدء المهمة" : "Start job", t ? "إكمال المهمة" : "Complete job"].map((action) => (
               <button
                 key={action}
                 type="button"
                     onClick={() =>
-                      action === "Accept"
+                      action === "Accept" || action === "قبول"
                         ? void updateStatus("accept")
-                        : action === "Start job"
+                        : action === "Start job" || action === "بدء المهمة"
                           ? void updateStatus("start")
                           : void updateStatus("complete")
                     }

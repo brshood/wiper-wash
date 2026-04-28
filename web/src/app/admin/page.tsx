@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { toggleLocale, usePreferredLocale } from "@/lib/locale";
 import {
+  type Locale,
   formatQar,
   services as defaultServices,
   workers,
@@ -35,18 +37,18 @@ type AdminTab =
   | "settings"
   | "logs";
 
-const tabs: Array<{ id: AdminTab; label: string }> = [
-  { id: "dashboard", label: "Dashboard" },
-  { id: "services", label: "Services" },
-  { id: "orders", label: "Orders" },
-  { id: "subscriptions", label: "Subscriptions" },
-  { id: "workers", label: "Workers" },
-  { id: "customers", label: "Customers" },
-  { id: "invoices", label: "Invoices" },
-  { id: "ratings", label: "Ratings" },
-  { id: "promos", label: "Promos" },
-  { id: "settings", label: "Settings" },
-  { id: "logs", label: "Audit logs" },
+const tabs: Array<{ id: AdminTab; label: Record<Locale, string> }> = [
+  { id: "dashboard", label: { en: "Dashboard", ar: "لوحة التحكم" } },
+  { id: "services", label: { en: "Services", ar: "الخدمات" } },
+  { id: "orders", label: { en: "Orders", ar: "الطلبات" } },
+  { id: "subscriptions", label: { en: "Subscriptions", ar: "الاشتراكات" } },
+  { id: "workers", label: { en: "Workers", ar: "العمال" } },
+  { id: "customers", label: { en: "Customers", ar: "العملاء" } },
+  { id: "invoices", label: { en: "Invoices", ar: "الفواتير" } },
+  { id: "ratings", label: { en: "Ratings", ar: "التقييمات" } },
+  { id: "promos", label: { en: "Promos", ar: "العروض" } },
+  { id: "settings", label: { en: "Settings", ar: "الإعدادات" } },
+  { id: "logs", label: { en: "Audit logs", ar: "سجلات التدقيق" } },
 ];
 
 const customers = [
@@ -68,6 +70,8 @@ const logs = [
 ];
 
 export default function AdminPage() {
+  const { locale, setLocale, isRtl } = usePreferredLocale("en");
+  const t = locale === "ar";
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [serviceList, setServiceList] = useState<ServiceOption[]>(defaultServices);
@@ -134,7 +138,7 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#f7f7f6] text-[#1E3951]">
+    <main dir={isRtl ? "rtl" : "ltr"} className="min-h-screen overflow-hidden bg-[#f7f7f6] text-[#1E3951]">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_15%,rgba(255,0,125,0.12),transparent_28%),radial-gradient(circle_at_90%_20%,rgba(68,152,131,0.14),transparent_26%)]" />
       <aside
         className={`fixed left-0 top-0 z-30 h-screen w-72 border-r border-[#1E3951]/10 bg-white/92 shadow-[0_24px_70px_rgba(30,57,81,0.12)] backdrop-blur-xl transition-transform duration-300 ${
@@ -150,7 +154,7 @@ export default function AdminPage() {
             width={521}
           />
           <span className="rounded-full bg-[#FF007D]/12 px-3 py-2 text-xs font-black uppercase tracking-[0.2em] text-[#FF007D]">
-            Admin
+            {t ? "إدارة" : "Admin"}
           </span>
         </div>
 
@@ -166,7 +170,7 @@ export default function AdminPage() {
               }`}
               type="button"
             >
-              <span>{tab.label}</span>
+              <span>{tab.label[locale]}</span>
             </button>
           ))}
         </nav>
@@ -178,7 +182,7 @@ export default function AdminPage() {
         }`}
         onClick={() => setDrawerOpen((open) => !open)}
         type="button"
-        aria-label="Toggle admin sidebar"
+            aria-label={t ? "تبديل الشريط الجانبي للإدارة" : "Toggle admin sidebar"}
       >
         {drawerOpen ? "‹" : "›"}
       </button>
@@ -188,18 +192,25 @@ export default function AdminPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.35em] text-[#FF007D]">
-                Admin only
+                {t ? "للإدارة فقط" : "Admin only"}
               </p>
               <h1 className="mt-1 text-4xl font-black tracking-[-0.05em]">
-                {tabs.find((tab) => tab.id === activeTab)?.label}
+                {tabs.find((tab) => tab.id === activeTab)?.label[locale]}
               </h1>
             </div>
             <div className="flex gap-3">
+              <button
+                className="rounded-full border border-[#1E3951]/15 bg-white px-5 py-3 text-sm font-black"
+                type="button"
+                onClick={() => setLocale(toggleLocale(locale))}
+              >
+                {t ? "English" : "العربية"}
+              </button>
               <button className="rounded-full bg-white px-5 py-3 text-sm font-black shadow-sm" type="button">
-                Export
+                {t ? "تصدير" : "Export"}
               </button>
               <button className="rounded-full bg-[#1E3951] px-5 py-3 text-sm font-black text-white" type="button">
-                Save changes
+                {t ? "حفظ التغييرات" : "Save changes"}
               </button>
             </div>
           </div>
@@ -210,10 +221,10 @@ export default function AdminPage() {
             <div className="space-y-6">
               <div className="grid gap-5 md:grid-cols-4">
                 {[
-                  ["Revenue", formatQar(revenue)],
-                  ["Open invoices", "12"],
-                  ["Completion rate", "94%"],
-                  ["Average rating", "4.8"],
+                  [t ? "الإيرادات" : "Revenue", formatQar(revenue, locale)],
+                  [t ? "فواتير مفتوحة" : "Open invoices", "12"],
+                  [t ? "نسبة الإكمال" : "Completion rate", "94%"],
+                  [t ? "متوسط التقييم" : "Average rating", "4.8"],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-[2rem] bg-white p-6 shadow-[0_18px_45px_rgba(30,57,81,0.08)]">
                     <p className="text-xs font-black uppercase tracking-[0.25em] text-[#1E3951]/45">
@@ -223,9 +234,14 @@ export default function AdminPage() {
                   </div>
                 ))}
               </div>
-              <Panel title="Command shortcuts">
+              <Panel title={t ? "اختصارات الأوامر" : "Command shortcuts"}>
                 <div className="grid gap-3 md:grid-cols-4">
-                  {["Assign queued orders", "Send rating emails", "Create promo", "Download invoices"].map((action) => (
+                  {[
+                    t ? "تعيين الطلبات في الطابور" : "Assign queued orders",
+                    t ? "إرسال رسائل التقييم" : "Send rating emails",
+                    t ? "إنشاء عرض ترويجي" : "Create promo",
+                    t ? "تنزيل الفواتير" : "Download invoices",
+                  ].map((action) => (
                     <button key={action} className="rounded-2xl bg-[#f7f7f6] p-4 text-left font-black" type="button">
                       {action}
                     </button>
@@ -237,7 +253,7 @@ export default function AdminPage() {
 
           {activeTab === "services" && (
             <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
-              <Panel title="Prices and service catalog">
+              <Panel title={t ? "الأسعار وكاتالوج الخدمات" : "Prices and service catalog"}>
                 <div className="space-y-3">
                   {serviceList.map((service) => (
                     <div key={service.id} className="grid gap-3 rounded-3xl bg-[#f7f7f6] p-4 md:grid-cols-[1fr_120px_120px_120px] md:items-center">
@@ -261,17 +277,17 @@ export default function AdminPage() {
                   ))}
                 </div>
               </Panel>
-              <Panel title="Add service">
+              <Panel title={t ? "إضافة خدمة" : "Add service"}>
                 <div className="space-y-3">
-                  <input className="admin-input" placeholder="Service name" value={newService.name} onChange={(event) => setNewService({ ...newService, name: event.target.value })} />
-                  <input className="admin-input" placeholder="Price QAR" value={newService.price} onChange={(event) => setNewService({ ...newService, price: event.target.value })} />
-                  <input className="admin-input" placeholder="Duration minutes" value={newService.duration} onChange={(event) => setNewService({ ...newService, duration: event.target.value })} />
+                  <input className="admin-input" placeholder={t ? "اسم الخدمة" : "Service name"} value={newService.name} onChange={(event) => setNewService({ ...newService, name: event.target.value })} />
+                  <input className="admin-input" placeholder={t ? "السعر (ر.ق)" : "Price QAR"} value={newService.price} onChange={(event) => setNewService({ ...newService, price: event.target.value })} />
+                  <input className="admin-input" placeholder={t ? "المدة بالدقائق" : "Duration minutes"} value={newService.duration} onChange={(event) => setNewService({ ...newService, duration: event.target.value })} />
                   <select className="admin-input" value={newService.kind} onChange={(event) => setNewService({ ...newService, kind: event.target.value as ServiceOption["kind"] })}>
-                    <option value="single">Single</option>
-                    <option value="subscription">Subscription</option>
+                    <option value="single">{t ? "مرة واحدة" : "Single"}</option>
+                    <option value="subscription">{t ? "اشتراك" : "Subscription"}</option>
                   </select>
                   <button className="w-full rounded-full bg-[#FF007D] px-5 py-4 text-sm font-black uppercase tracking-[0.2em] text-white" onClick={addService} type="button">
-                    Add service
+                    {t ? "إضافة خدمة" : "Add service"}
                   </button>
                 </div>
               </Panel>
@@ -279,16 +295,16 @@ export default function AdminPage() {
           )}
 
           {activeTab === "orders" && (
-            <Panel title="Order actions">
+            <Panel title={t ? "إجراءات الطلبات" : "Order actions"}>
               <AdminTable
-                headers={["ID", "Customer", "Service", "Zone", "Slot", "Worker", "Status", "Amount"]}
+                headers={t ? ["المعرف", "العميل", "الخدمة", "المنطقة", "الوقت", "العامل", "الحالة", "المبلغ"] : ["ID", "Customer", "Service", "Zone", "Slot", "Worker", "Status", "Amount"]}
                 rows={orders.map((order) => [
                   order.id,
                   order.customer,
                   order.service,
                   order.zone,
                   order.day ? `${order.day} | ${order.slot}` : order.slot,
-                  order.worker ?? "Queue",
+                  order.worker ?? (t ? "الطابور" : "Queue"),
                   order.status.replace("_", " "),
                   formatQar(order.amount),
                 ])}
@@ -297,9 +313,9 @@ export default function AdminPage() {
           )}
 
           {activeTab === "subscriptions" && (
-            <Panel title="Subscription controls">
+            <Panel title={t ? "إدارة الاشتراكات" : "Subscription controls"}>
               <AdminTable
-                headers={["ID", "Customer", "Plate", "Weekday", "Time", "Status", "Amount"]}
+                headers={t ? ["المعرف", "العميل", "اللوحة", "اليوم", "الوقت", "الحالة", "المبلغ"] : ["ID", "Customer", "Plate", "Weekday", "Time", "Status", "Amount"]}
                 rows={subscriptions.map((subscription) => [
                   subscription.id,
                   subscription.customer,
@@ -314,14 +330,14 @@ export default function AdminPage() {
           )}
 
           {activeTab === "workers" && (
-            <Panel title="Worker dispatch">
+            <Panel title={t ? "توزيع العمال" : "Worker dispatch"}>
               <div className="grid gap-4 md:grid-cols-3">
                 {workers.map((worker) => (
                   <div key={worker.id} className="rounded-3xl bg-[#f7f7f6] p-5">
                     <p className="text-xl font-black">{worker.name}</p>
                     <p className="mt-1 text-sm text-[#1E3951]/58">{worker.location} | {worker.shift}</p>
                     <p className="mt-4 font-black text-[#FF007D]">Rating {worker.rating}</p>
-                    <button className="mt-4 rounded-full bg-[#1E3951] px-4 py-2 text-sm font-black text-white" type="button">Assign job</button>
+                    <button className="mt-4 rounded-full bg-[#1E3951] px-4 py-2 text-sm font-black text-white" type="button">{t ? "تعيين مهمة" : "Assign job"}</button>
                   </div>
                 ))}
               </div>
@@ -329,41 +345,41 @@ export default function AdminPage() {
           )}
 
           {activeTab === "customers" && (
-            <Panel title="Customer logs">
-              <AdminTable headers={["Customer", "Area", "History", "Spend"]} rows={customers} />
+            <Panel title={t ? "سجل العملاء" : "Customer logs"}>
+              <AdminTable headers={t ? ["العميل", "المنطقة", "السجل", "الإنفاق"] : ["Customer", "Area", "History", "Spend"]} rows={customers} />
             </Panel>
           )}
 
           {activeTab === "invoices" && (
-            <Panel title="Invoices and receipts">
-              <AdminTable headers={["Invoice", "Reference", "Status", "Total"]} rows={invoices} />
+            <Panel title={t ? "الفواتير والإيصالات" : "Invoices and receipts"}>
+              <AdminTable headers={t ? ["الفاتورة", "المرجع", "الحالة", "الإجمالي"] : ["Invoice", "Reference", "Status", "Total"]} rows={invoices} />
             </Panel>
           )}
 
           {activeTab === "ratings" && (
-            <Panel title="Ratings commands">
-              <ActionGrid actions={["Send pending rating emails", "Review low ratings", "Export comments", "Open dispute log"]} />
+            <Panel title={t ? "أوامر التقييمات" : "Ratings commands"}>
+              <ActionGrid actions={t ? ["إرسال رسائل التقييم المعلقة", "مراجعة التقييمات المنخفضة", "تصدير التعليقات", "فتح سجل النزاعات"] : ["Send pending rating emails", "Review low ratings", "Export comments", "Open dispute log"]} />
             </Panel>
           )}
 
           {activeTab === "promos" && (
-            <Panel title="Promo manager">
+            <Panel title={t ? "إدارة العروض" : "Promo manager"}>
               <div className="grid gap-3 md:grid-cols-3">
-                <input className="admin-input" placeholder="Code e.g. WIPER20" />
-                <input className="admin-input" placeholder="Discount %" />
-                <button className="rounded-full bg-[#FF007D] px-5 py-4 font-black text-white" type="button">Create promo</button>
+                <input className="admin-input" placeholder={t ? "الرمز مثال WIPER20" : "Code e.g. WIPER20"} />
+                <input className="admin-input" placeholder={t ? "نسبة الخصم %" : "Discount %"} />
+                <button className="rounded-full bg-[#FF007D] px-5 py-4 font-black text-white" type="button">{t ? "إنشاء عرض" : "Create promo"}</button>
               </div>
             </Panel>
           )}
 
           {activeTab === "settings" && (
-            <Panel title="System settings">
-              <ActionGrid actions={["Set VAT rate", "Edit working hours", "Set slot duration", "Configure email sender", "Manage admin roles", "Assignment rules"]} />
+            <Panel title={t ? "إعدادات النظام" : "System settings"}>
+              <ActionGrid actions={t ? ["تحديد نسبة الضريبة", "تعديل ساعات العمل", "تحديد مدة الفترة", "ضبط مرسل البريد", "إدارة صلاحيات الإدارة", "قواعد التعيين"] : ["Set VAT rate", "Edit working hours", "Set slot duration", "Configure email sender", "Manage admin roles", "Assignment rules"]} />
             </Panel>
           )}
 
           {activeTab === "logs" && (
-            <Panel title="Audit logs">
+            <Panel title={t ? "سجلات التدقيق" : "Audit logs"}>
               <div className="space-y-3">
                 {logs.map((log) => (
                   <div key={log} className="rounded-2xl bg-[#f7f7f6] p-4 font-bold">{log}</div>

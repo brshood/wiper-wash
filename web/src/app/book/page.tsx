@@ -18,6 +18,7 @@ import {
   type ServiceKind,
   weekdayOptions,
 } from "@/lib/wiper";
+import { toggleLocale, usePreferredLocale } from "@/lib/locale";
 
 type Step = "choice" | "single-service" | "subscription" | "polish" | "details";
 
@@ -109,7 +110,7 @@ function ChoiceIcon({ type }: { type: "subscription" | "single" }) {
 }
 
 export default function BookPage() {
-  const [locale, setLocale] = useState<Locale>("en");
+  const { locale, setLocale, isRtl } = usePreferredLocale("en");
   const [step, setStep] = useState<Step>("choice");
   const [kind, setKind] = useState<ServiceKind | null>(null);
   const [serviceId, setServiceId] = useState("outer");
@@ -155,7 +156,6 @@ export default function BookPage() {
     !!day &&
     !!slot;
 
-  const isRtl = locale === "ar";
   const stepIndex = ["choice", "single-service", "subscription", "polish", "details"].indexOf(step);
 
   function chooseKind(nextKind: ServiceKind) {
@@ -284,7 +284,7 @@ export default function BookPage() {
           )}
           <button
             className="focus-ring rounded-full border border-[#1E3951]/15 bg-white px-4 py-2 text-xs font-bold"
-            onClick={() => setLocale(locale === "en" ? "ar" : "en")}
+            onClick={() => setLocale(toggleLocale(locale))}
             type="button"
           >
             {locale === "en" ? bookCopy.langSwitchToAr[locale] : bookCopy.langSwitchToEn[locale]}
