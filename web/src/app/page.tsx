@@ -3,10 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { CSSProperties } from "react";
+import { useState, type FormEvent } from "react";
 import { HowItWorksFlashcards } from "@/components/HowItWorksFlashcards";
 import { LogoMontage } from "@/components/LogoMontage";
 import { usePreferredLocale, toggleLocale } from "@/lib/locale";
 import type { Locale } from "@/lib/wiper";
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/wiper";
+
+const heroPrimaryCtaClass =
+  "focus-ring rounded-full bg-[#FF007D] px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] text-white shadow-[0_20px_60px_rgba(255,0,125,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(255,0,125,0.42)] sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em]";
 
 const trustBadges: Record<Locale, string[]> = {
   en: ["On-demand service", "Weekly subscriptions", "Professional staff", "Payment online"],
@@ -16,21 +21,21 @@ const trustBadges: Record<Locale, string[]> = {
 const howSteps: Record<Locale, Array<{ title: string; description: string }>> = {
   en: [
     { title: "Choose Your Service", description: "Select one-time wash or monthly subscription." },
-    { title: "Enter Your Details", description: "Add your name, phone number, email, address, and notes." },
+    { title: "Enter Your Details", description: "Add your name, phone number, service area, and notes." },
     { title: "Pay Online", description: "Securely pay based on the package you choose." },
     { title: "We Come to You", description: "WIPER staff arrive at your location and clean your car." },
   ],
   ar: [
     { title: "اختر خدمتك", description: "اختر غسيلاً لمرة واحدة أو اشتراكاً شهرياً." },
-    { title: "أدخل بياناتك", description: "أضف الاسم ورقم الهاتف والبريد الإلكتروني والعنوان والملاحظات." },
+    { title: "أدخل بياناتك", description: "أضف الاسم ورقم الهاتف ومنطقة الخدمة والملاحظات." },
     { title: "ادفع أونلاين", description: "ادفع بأمان حسب الباقة التي تختارها." },
     { title: "نصل إليك", description: "يصل فريق WIPER إلى موقعك ويقوم بتنظيف سيارتك." },
   ],
 };
 
 const subscriptionFields: Record<Locale, string[]> = {
-  en: ["Preferred weekly day", "Customer name", "Phone number", "Email", "Address", "Notes"],
-  ar: ["اليوم الأسبوعي المفضل", "اسم العميل", "رقم الهاتف", "البريد الإلكتروني", "العنوان", "ملاحظات"],
+  en: ["Preferred weekly day", "Customer name", "Phone number", "Service area", "Notes"],
+  ar: ["اليوم الأسبوعي المفضل", "اسم العميل", "رقم الهاتف", "منطقة الخدمة", "ملاحظات"],
 };
 
 const benefits: Record<Locale, Array<{ title: string; description: string }>> = {
@@ -106,10 +111,7 @@ const faqs: Record<Locale, Array<{ question: string; answer: string }>> = {
 
 function PrimaryCta({ children }: { children: string }) {
   return (
-    <Link
-      href="/book"
-      className="focus-ring rounded-full bg-[#FF007D] px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] text-white shadow-[0_20px_60px_rgba(255,0,125,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(255,0,125,0.42)] sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em]"
-    >
+    <Link href="/book" className={heroPrimaryCtaClass}>
       {children}
     </Link>
   );
@@ -254,7 +256,7 @@ function HeroSection({ locale, onToggleLocale }: { locale: Locale; onToggleLocal
       <Navbar locale={locale} onToggleLocale={onToggleLocale} />
 
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-8 px-4 pb-16 pt-6 sm:gap-12 sm:px-8 sm:pb-20 sm:pt-10 lg:grid-cols-[0.92fr_1.08fr] lg:px-10 lg:pb-28 lg:pt-16">
-        <div className="scroll-art-card max-w-2xl rounded-[1.75rem] bg-white/90 p-5 shadow-[0_20px_60px_rgba(30,57,81,0.08)] backdrop-blur-md sm:rounded-[2.5rem] sm:p-8">
+        <div className="scroll-art-card relative z-30 max-w-2xl rounded-[1.75rem] bg-white/90 p-5 shadow-[0_20px_60px_rgba(30,57,81,0.08)] backdrop-blur-md sm:rounded-[2.5rem] sm:p-8">
           <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-[#FF007D] sm:mb-5 sm:text-sm sm:tracking-[0.45em]">
             {locale === "ar" ? "غسيل سيارات متنقل قطر" : "Mobile car wash Qatar"}
           </p>
@@ -284,7 +286,7 @@ function HeroSection({ locale, onToggleLocale }: { locale: Locale; onToggleLocal
           </div>
         </div>
 
-        <div className="hero-photo-stage relative mx-auto min-h-[24rem] w-full max-w-[28rem] sm:min-h-[39rem] sm:max-w-none">
+        <div className="hero-photo-stage relative z-10 mx-auto min-h-[24rem] w-full max-w-[28rem] sm:min-h-[39rem] sm:max-w-none">
           <div className="absolute -left-8 -top-6 z-0 h-32 w-32 rounded-full bg-[#FBF3A7] sm:-left-14 sm:-top-12 sm:h-44 sm:w-44" />
           <div className="absolute -right-4 bottom-16 z-0 h-24 w-24 rounded-full bg-[#449883]/80 sm:-right-8 sm:bottom-8 sm:h-28 sm:w-28" />
           <div className="absolute bottom-28 left-[16%] z-0 h-12 w-[70%] rounded-full bg-[#1E3951]/22 blur-2xl sm:bottom-16 sm:left-[8%] sm:h-20 sm:w-[86%]" />
@@ -319,12 +321,12 @@ function HeroSection({ locale, onToggleLocale }: { locale: Locale; onToggleLocal
               width={1024}
             />
           </div>
-          <div className="absolute bottom-4 left-6 z-20 rounded-[1.5rem] bg-[#1E3951] p-4 text-white shadow-2xl sm:-bottom-10 sm:left-8 sm:rounded-[2rem] sm:p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#FF007D] sm:text-sm sm:tracking-[0.3em]">
-              {locale === "ar" ? "احجز WIPER" : "Book WIPER"}
-            </p>
-            <p className="mt-1 text-2xl font-black sm:mt-2 sm:text-3xl">{locale === "ar" ? "احجز الآن" : "Book now"}</p>
-          </div>
+          <Link
+            href="/book"
+            className={`${heroPrimaryCtaClass} absolute bottom-4 left-6 z-30 sm:-bottom-10 sm:left-8`}
+          >
+            {locale === "ar" ? "احجز غسيل" : "Book a Wash"}
+          </Link>
         </div>
       </div>
     </section>
@@ -461,6 +463,99 @@ function FinalCTASection({ locale }: { locale: Locale }) {
   );
 }
 
+function ContactSection({ locale }: { locale: Locale }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setFeedback(null);
+    if (!phone.trim() || !message.trim()) {
+      setFeedback(locale === "ar" ? "أدخل الهاتف والرسالة." : "Please add your phone number and message.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, phone, message }),
+      });
+      if (!res.ok) throw new Error("fail");
+      setFeedback(
+        locale === "ar" ? "تم الإرسال. سيصل تنبيه للإدارة وسنتواصل معك." : "Sent. Admin is notified and we will contact you.",
+      );
+      setName("");
+      setPhone("");
+      setMessage("");
+    } catch {
+      setFeedback(locale === "ar" ? "تعذر الإرسال. حاول مرة أخرى." : "Could not send. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section id="contact" className="bg-white py-20">
+      <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-10">
+        <SectionHeading
+          eyebrow={locale === "ar" ? "تواصل" : "Contact"}
+          title={locale === "ar" ? "رسالة لفريق WIPER" : "Message the WIPER team"}
+          description={
+            locale === "ar"
+              ? "أرسل لنا طلبك أو استفسارك — تصل إشعار فوري للإدارة."
+              : "Send a request or question — admins get an instant notification."
+          }
+        />
+        <form onSubmit={onSubmit} className="mx-auto mt-10 max-w-xl space-y-4">
+          <input
+            className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-4 py-3.5 text-sm font-black text-[#1E3951] placeholder:text-[#1E3951]/38"
+            placeholder={locale === "ar" ? "الاسم" : "Your name"}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            autoComplete="name"
+          />
+          <input
+            className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-4 py-3.5 text-sm font-black text-[#1E3951] placeholder:text-[#1E3951]/38"
+            placeholder={locale === "ar" ? "الهاتف *" : "Phone *"}
+            required
+            type="tel"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            autoComplete="tel"
+          />
+          <textarea
+            className="focus-ring min-h-[8rem] w-full resize-y rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-4 py-3.5 text-sm font-bold text-[#1E3951] placeholder:text-[#1E3951]/38"
+            placeholder={locale === "ar" ? "الرسالة *" : "Message *"}
+            required
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+          />
+          <button
+            type="submit"
+            disabled={busy}
+            className={`${heroPrimaryCtaClass} w-full disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto`}
+          >
+            {busy
+              ? locale === "ar"
+                ? "جاري الإرسال…"
+                : "Sending…"
+              : locale === "ar"
+                ? "إرسال"
+                : "Send message"}
+          </button>
+        </form>
+        {feedback && (
+          <p className="mx-auto mt-4 max-w-xl text-sm font-bold text-[#1E3951]/72">{feedback}</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function Footer({ locale }: { locale: Locale }) {
   return (
     <footer className="bg-[#262626] px-6 py-10 text-white sm:px-8 lg:px-10">
@@ -477,6 +572,12 @@ function Footer({ locale }: { locale: Locale }) {
         <p className="text-sm font-bold text-white/58">
           {locale === "ar" ? "غسيل سيارات متنقل عند باب منزلك في قطر." : "Mobile car wash at your doorstep in Qatar."}
         </p>
+        <a
+          href={`tel:${CONTACT_PHONE_TEL}`}
+          className="text-sm font-black text-[#FF007D] transition hover:text-white"
+        >
+          {CONTACT_PHONE_DISPLAY}
+        </a>
       </div>
     </footer>
   );
@@ -493,6 +594,7 @@ export default function Home() {
       <SubscriptionSection locale={locale} />
       <WhyWiperSection locale={locale} />
       <FAQSection locale={locale} />
+      <ContactSection locale={locale} />
       <FinalCTASection locale={locale} />
       <Footer locale={locale} />
     </main>

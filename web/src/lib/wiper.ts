@@ -132,13 +132,8 @@ export const services: ServiceOption[] = [
   },
 ];
 
+/** First reservation 15:00, last window ends 22:00 (10pm). */
 export const timeSlots = [
-  "08:00 - 09:00",
-  "09:00 - 10:00",
-  "10:00 - 11:00",
-  "11:00 - 12:00",
-  "12:00 - 13:00",
-  "14:00 - 15:00",
   "15:00 - 16:00",
   "16:00 - 17:00",
   "17:00 - 18:00",
@@ -147,6 +142,45 @@ export const timeSlots = [
   "20:00 - 21:00",
   "21:00 - 22:00",
 ];
+
+/** Service areas (stored as the English zone name for orders and routing). */
+export const SERVICE_LOCATIONS = [
+  "West Bay",
+  "The Pearl",
+  "Lusail",
+  "Al Dafna",
+  "Msheireb",
+  "Al Sadd",
+  "Bin Mahmoud",
+  "Al Waab",
+  "Ain Khaled",
+  "Abu Hamour",
+  "Al Thumama",
+  "Al Maamoura",
+  "Old Airport",
+  "Al Hilal",
+  "Najma",
+  "Umm Ghuwailina",
+  "Madinat Khalifa",
+  "Al Duhail",
+  "Al Gharafa",
+  "Muaither",
+  "Bani Hajer",
+  "Al Wajba",
+  "Al Markhiya",
+  "Umm Lekhba",
+  "Izghawa",
+  "Al Sailiya",
+  "Abu Nakhla",
+  "Leqtaifiya",
+  "Al Wakrah",
+  "Al Wukair",
+] as const;
+
+export type ServiceLocation = (typeof SERVICE_LOCATIONS)[number];
+
+export const CONTACT_PHONE_DISPLAY = "+974 7767 6160";
+export const CONTACT_PHONE_TEL = "+97477676160";
 
 /** English weekday value sent to APIs; localized label for UI. */
 export const weekdayOptions: { value: string; label: Record<Locale, string> }[] = [
@@ -160,6 +194,35 @@ export const weekdayOptions: { value: string; label: Record<Locale, string> }[] 
 ];
 
 export const availableDays = weekdayOptions.map((item) => item.value);
+
+export function formatISODateLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function weekdayValueFromISODate(iso: string): string {
+  const parts = iso.split("-").map(Number);
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return "Sunday";
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
+  return weekdayOptions[d.getDay()]?.value ?? "Sunday";
+}
+
+/** Local calendar date at the start time of the booking slot window. */
+export function combinedLocalDateTime(isoDate: string, slot: string): Date {
+  const parts = isoDate.split("-").map(Number);
+  const y = parts[0] ?? 1970;
+  const mo = parts[1] ?? 1;
+  const day = parts[2] ?? 1;
+  const d = new Date(y, mo - 1, day);
+  const [start] = slot.split("-").map((item) => item.trim());
+  const [hStr, mStr] = (start ?? "15:00").split(":");
+  const hours = Number(hStr);
+  const minutes = Number(mStr);
+  d.setHours(Number.isNaN(hours) ? 15 : hours, Number.isNaN(minutes) ? 0 : minutes, 0, 0);
+  return d;
+}
 
 export const polishOptionDefs: { id: string; label: Record<Locale, string> }[] = [
   { id: "inner", label: { en: "Inner", ar: "داخلي" } },
@@ -213,8 +276,10 @@ export const bookCopy = {
   placeholderName: { en: "Customer name *", ar: "اسم العميل *" },
   placeholderPlate: { en: "Car plate number *", ar: "رقم اللوحة *" },
   placeholderPhone: { en: "Phone *", ar: "الهاتف *" },
-  placeholderEmail: { en: "Email *", ar: "البريد الإلكتروني *" },
-  placeholderAddress: { en: "Address *", ar: "العنوان *" },
+  chooseLocation: { en: "Choose location", ar: "اختر الموقع" },
+  searchLocations: { en: "Search areas…", ar: "بحث في المناطق…" },
+  serviceDate: { en: "Service date *", ar: "تاريخ الخدمة *" },
+  bookingDate: { en: "Date", ar: "التاريخ" },
   placeholderCarDetails: { en: "Car details", ar: "تفاصيل السيارة" },
   placeholderNote: { en: "Note", ar: "ملاحظة" },
   placeholderPromo: { en: "Promo code", ar: "رمز ترويجي" },
@@ -232,6 +297,7 @@ export const bookCopy = {
   plate: { en: "Plate", ar: "اللوحة" },
   service: { en: "Service", ar: "الخدمة" },
   day: { en: "Day", ar: "اليوم" },
+  zoneLabel: { en: "Location", ar: "الموقع" },
   time: { en: "Time", ar: "الوقت" },
   notSet: { en: "Not set", ar: "غير محدد" },
   notSelected: { en: "Not selected", ar: "غير محدد" },
@@ -239,8 +305,8 @@ export const bookCopy = {
   promo: { en: "Promo", ar: "ترويجي" },
   orderPlaced: { en: "Order placed", ar: "تم تأكيد الطلب" },
   receiptBody: {
-    en: "Receipt {id} has been created. Confirmation details were sent to the email and number on file.",
-    ar: "تم إنشاء الإيصال {id}. تم إرسال تفاصيل التأكيد إلى البريد الإلكتروني والرقم المسجلين.",
+    en: "Receipt {id} has been created. We will confirm your booking using the phone number you provided.",
+    ar: "تم إنشاء الإيصال {id}. سنتواصل معك لتأكيد الحجز عبر رقم الهاتف الذي أدخلته.",
   },
   done: { en: "Done", ar: "تم" },
   errSubscription: { en: "Unable to create subscription.", ar: "تعذر إنشاء الاشتراك." },
@@ -316,7 +382,7 @@ export const workOrders: WorkOrder[] = [
     service: "VIP wash",
     status: "assigned",
     zone: "The Pearl",
-    slot: "10:00 - 12:00",
+    slot: "17:00 - 18:00",
     worker: "Omar Hassan",
     amount: 150,
   },
@@ -327,7 +393,7 @@ export const workOrders: WorkOrder[] = [
     service: "Monthly subscription",
     status: "new",
     zone: "West Bay",
-    slot: "15:00 - 16:00",
+    slot: "18:00 - 19:00",
     amount: 280,
   },
   {
@@ -337,7 +403,7 @@ export const workOrders: WorkOrder[] = [
     service: "Outer + inner",
     status: "in_progress",
     zone: "Lusail",
-    slot: "14:00 - 15:15",
+    slot: "16:00 - 17:00",
     worker: "Khaled Nasser",
     amount: 80,
   },

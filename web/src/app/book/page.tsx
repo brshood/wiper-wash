@@ -8,17 +8,21 @@ import {
   calculatePrice,
   calculatePromoDiscount,
   formatBookReceiptBody,
+  formatISODateLocal,
   formatPromoAppliedMessage,
   formatQar,
   isSlotAvailable,
   polishOptionDefs,
   services,
   timeSlots,
+  weekdayValueFromISODate,
+  weekdayOptions,
+  SERVICE_LOCATIONS,
   type Locale,
   type ServiceKind,
-  weekdayOptions,
 } from "@/lib/wiper";
 import { toggleLocale, usePreferredLocale } from "@/lib/locale";
+import { ServiceLocationModal } from "@/components/ServiceLocationModal";
 
 type Step = "choice" | "single-service" | "subscription" | "polish" | "details";
 
@@ -116,13 +120,13 @@ export default function BookPage() {
   const [serviceId, setServiceId] = useState("outer");
   const [polishIds, setPolishIds] = useState<string[]>([]);
   const [agreed, setAgreed] = useState(false);
-  const [day, setDay] = useState("Sunday");
-  const [slot, setSlot] = useState("10:00 - 11:00");
+  const [serviceDate, setServiceDate] = useState(() => formatISODateLocal(new Date()));
+  const [slot, setSlot] = useState("15:00 - 16:00");
   const [customerName, setCustomerName] = useState("");
   const [plateNumber, setPlateNumber] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
+  const [zone, setZone] = useState<string>(SERVICE_LOCATIONS[0]);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [carDetails, setCarDetails] = useState("");
   const [note, setNote] = useState("");
   const [paid, setPaid] = useState(false);
@@ -134,6 +138,10 @@ export default function BookPage() {
 
   const activeServices = services.filter((service) => service.kind === "single");
   const selectedService = services.find((service) => service.id === serviceId);
+  const slotOptions = useMemo(() => {
+    const open = timeSlots.filter((item) => isSlotAvailable(item));
+    return open.length > 0 ? open : timeSlots;
+  }, []);
   const amount = useMemo(
     () =>
       kind === "subscription"
@@ -146,14 +154,21 @@ export default function BookPage() {
     [amount, appliedPromo],
   );
   const finalAmount = Math.max(0, amount - promoResult.discount);
+  const maxBookDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 90);
+    return formatISODateLocal(d);
+  }, []);
+  const derivedWeekday = weekdayValueFromISODate(serviceDate);
   const isDetailsValid =
     !!kind &&
     !!customerName.trim() &&
     !!plateNumber.trim() &&
     !!phone.trim() &&
-    !!email.trim() &&
-    !!address.trim() &&
-    !!day &&
+    !!zone &&
+    SERVICE_LOCATIONS.includes(zone as (typeof SERVICE_LOCATIONS)[number]) &&
+    !!serviceDate &&
+    /^\d{4}-\d{2}-\d{2}$/.test(serviceDate) &&
     !!slot;
 
   const stepIndex = ["choice", "single-service", "subscription", "polish", "details"].indexOf(step);
@@ -191,7 +206,7 @@ export default function BookPage() {
     setPromoMessage("");
 
     try {
-      const zone = address.trim() || "West Bay";
+      const weekday = weekdayValueFromISODate(serviceDate);
 
       if (kind === "subscription") {
         const response = await fetch("/api/subscriptions", {
@@ -200,9 +215,10 @@ export default function BookPage() {
           body: JSON.stringify({
             customer: customerName.trim(),
             plateNumber: plateNumber.trim(),
-            weekday: day,
+            weekday,
             slot,
             zone,
+            scheduledDate: serviceDate,
           }),
         });
 
@@ -222,10 +238,11 @@ export default function BookPage() {
               services.find((service) => service.id === serviceId)?.label.en ??
               "Outer wash",
             zone,
-            day,
+            day: weekday,
             slot,
             amount: finalAmount,
             kind: "single",
+            scheduledDate: serviceDate,
           }),
         });
 
@@ -485,6 +502,13 @@ export default function BookPage() {
               </div>
               <div className="mobile-fit-grid mt-3 grid gap-2 lg:grid-cols-[1fr_360px]">
                 <div className="mobile-fit-card rounded-[1.8rem] border border-[#1E3951]/10 bg-white p-3 shadow-[0_24px_70px_rgba(30,57,81,0.10)] sm:p-6">
+                  <ServiceLocationModal
+                    open={locationModalOpen}
+                    locale={locale}
+                    selected={zone}
+                    onClose={() => setLocationModalOpen(false)}
+                    onSelect={setZone}
+                  />
                   <div className="grid grid-cols-2 gap-2 sm:gap-4">
                     <input
                       className="focus-ring w-full rounded-2xl border-2 border-[#FF007D]/55 bg-[#f7f7f6] px-3 py-2.5 text-sm font-black text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
@@ -501,28 +525,25 @@ export default function BookPage() {
                       onChange={(event) => setPlateNumber(event.target.value.toUpperCase())}
                     />
                     <input
-                      className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
+                      className="focus-ring col-span-2 w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
                       placeholder={bookCopy.placeholderPhone[locale]}
                       required
                       type="tel"
                       value={phone}
                       onChange={(event) => setPhone(event.target.value)}
                     />
-                    <input
-                      className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
-                      placeholder={bookCopy.placeholderEmail[locale]}
-                      required
-                      type="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                    />
-                    <input
-                      className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
-                      placeholder={bookCopy.placeholderAddress[locale]}
-                      required
-                      value={address}
-                      onChange={(event) => setAddress(event.target.value)}
-                    />
+                    <button
+                      type="button"
+                      className="focus-ring col-span-2 flex w-full items-center justify-between rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-left text-sm font-black text-[#1E3951] sm:px-4 sm:py-4"
+                      onClick={() => setLocationModalOpen(true)}
+                    >
+                      <span className={zone ? "text-[#1E3951]" : "text-[#1E3951]/38"}>
+                        {zone || bookCopy.chooseLocation[locale]}
+                      </span>
+                      <span className="text-xs font-black text-[#FF007D]" aria-hidden>
+                        ▼
+                      </span>
+                    </button>
                     <input
                       className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
                       placeholder={bookCopy.placeholderCarDetails[locale]}
@@ -530,37 +551,42 @@ export default function BookPage() {
                       onChange={(event) => setCarDetails(event.target.value)}
                     />
                     <input
-                      className="focus-ring col-span-2 w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
+                      className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
                       placeholder={bookCopy.placeholderNote[locale]}
                       value={note}
                       onChange={(event) => setNote(event.target.value)}
                     />
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-[220px_1fr] sm:gap-4">
-                    <select
-                      className="focus-ring rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm sm:px-4 sm:py-4"
-                      required
-                      value={day}
-                      onChange={(event) => setDay(event.target.value)}
-                    >
-                      {weekdayOptions.map((item) => (
-                        <option key={item.value} value={item.value}>
-                          {item.label[locale]}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      className="focus-ring rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm sm:px-4 sm:py-4"
-                      required
-                      value={slot}
-                      onChange={(event) => setSlot(event.target.value)}
-                    >
-                      {timeSlots
-                        .filter((item) => isSlotAvailable(item))
-                        .map((item) => (
-                          <option key={item}>{item}</option>
-                        ))}
-                    </select>
+                  <div className="mt-2 grid grid-cols-2 gap-2 sm:mt-5 sm:gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#1E3951]/45">
+                        {bookCopy.serviceDate[locale]}
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        min={formatISODateLocal(new Date())}
+                        max={maxBookDate}
+                        className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm font-bold sm:px-4 sm:py-4"
+                        value={serviceDate}
+                        onChange={(event) => setServiceDate(event.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#1E3951]/45">
+                        {bookCopy.time[locale]}
+                      </label>
+                      <select
+                        className="focus-ring w-full rounded-2xl border border-[#1E3951]/10 bg-[#f7f7f6] px-3 py-2.5 text-sm font-bold sm:px-4 sm:py-4"
+                        required
+                        value={slot}
+                        onChange={(event) => setSlot(event.target.value)}
+                      >
+                        {slotOptions.map((item) => (
+                            <option key={item}>{item}</option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
                   <div className="mt-2 grid gap-2 sm:mt-4 sm:grid-cols-[1fr_130px]">
                     <input
@@ -642,10 +668,19 @@ export default function BookPage() {
                           : selectedService?.label[locale] ?? bookCopy.notSelected[locale]}
                       </strong>
                     </div>
+                    <div className="flex justify-between gap-4">
+                      <span>{bookCopy.zoneLabel[locale]}</span>
+                      <strong className="text-white">{zone || bookCopy.notSet[locale]}</strong>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span>{bookCopy.bookingDate[locale]}</span>
+                      <strong className="text-white">{serviceDate}</strong>
+                    </div>
                     <div className="flex justify-between">
                       <span>{bookCopy.day[locale]}</span>
                       <strong className="text-white">
-                        {weekdayOptions.find((item) => item.value === day)?.label[locale] ?? day}
+                        {weekdayOptions.find((item) => item.value === derivedWeekday)?.label[locale] ??
+                          derivedWeekday}
                       </strong>
                     </div>
                     <div className="flex justify-between">

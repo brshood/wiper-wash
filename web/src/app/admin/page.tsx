@@ -12,6 +12,14 @@ import {
 } from "@/lib/wiper";
 import type { SubscriptionRecord } from "@/lib/store";
 
+type ApiInquiry = {
+  id: string;
+  name: string;
+  phone: string;
+  message: string;
+  createdAt: string;
+};
+
 type ApiOrder = {
   id: string;
   customer: string;
@@ -77,6 +85,7 @@ export default function AdminPage() {
   const [serviceList, setServiceList] = useState<ServiceOption[]>(defaultServices);
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [subscriptions, setSubscriptions] = useState<SubscriptionRecord[]>([]);
+  const [inquiries, setInquiries] = useState<ApiInquiry[]>([]);
   const [newService, setNewService] = useState({
     name: "",
     price: "90",
@@ -88,9 +97,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     async function loadData() {
-      const [ordersResponse, subscriptionsResponse] = await Promise.all([
+      const [ordersResponse, subscriptionsResponse, inquiriesResponse] = await Promise.all([
         fetch("/api/orders", { cache: "no-store" }),
         fetch("/api/subscriptions", { cache: "no-store" }),
+        fetch("/api/inquiries", { cache: "no-store" }),
       ]);
 
       if (ordersResponse.ok) {
@@ -101,6 +111,11 @@ export default function AdminPage() {
       if (subscriptionsResponse.ok) {
         const data = (await subscriptionsResponse.json()) as { subscriptions: SubscriptionRecord[] };
         setSubscriptions(data.subscriptions);
+      }
+
+      if (inquiriesResponse.ok) {
+        const data = (await inquiriesResponse.json()) as { inquiries: ApiInquiry[] };
+        setInquiries(data.inquiries);
       }
     }
 
@@ -219,6 +234,26 @@ export default function AdminPage() {
         <div className="p-6">
           {activeTab === "dashboard" && (
             <div className="space-y-6">
+              {inquiries.length > 0 && (
+                <Panel title={t ? "إشعارات التواصل الجديدة" : "New contact notifications"}>
+                  <ul className="space-y-3">
+                    {inquiries.slice(0, 8).map((item) => (
+                      <li
+                        key={item.id}
+                        className="rounded-2xl border border-[#FF007D]/22 bg-[#FF007D]/6 p-4"
+                      >
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-[#FF007D]">
+                          {item.id} · {new Date(item.createdAt).toLocaleString(locale === "ar" ? "ar-QA" : "en-QA")}
+                        </p>
+                        <p className="mt-2 font-black text-[#1E3951]">
+                          {item.name || (t ? "زائر" : "Visitor")} · {item.phone}
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-[#1E3951]/72">{item.message}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </Panel>
+              )}
               <div className="grid gap-5 md:grid-cols-4">
                 {[
                   [t ? "الإيرادات" : "Revenue", formatQar(revenue, locale)],

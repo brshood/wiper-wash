@@ -22,6 +22,7 @@ export async function POST(request: Request) {
       weekday?: string;
       slot?: string;
       zone?: string;
+      scheduledDate?: string;
     };
     const monthly = services.find((service) => service.id === "monthly");
     const amount = monthly?.price ?? 0;
@@ -29,9 +30,10 @@ export async function POST(request: Request) {
       customer: body.customer ?? "guest",
       plateNumber: body.plateNumber ?? "QTR-00000",
       weekday: body.weekday ?? "Sunday",
-      slot: body.slot ?? "10:00 - 11:00",
+      slot: body.slot ?? "15:00 - 16:00",
       zone: body.zone ?? "West Bay",
       amount,
+      scheduledDate: body.scheduledDate,
     });
 
     return NextResponse.json(

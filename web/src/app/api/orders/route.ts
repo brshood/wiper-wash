@@ -24,6 +24,7 @@ export async function POST(request: Request) {
       slot?: string;
       amount?: number;
       kind?: "single" | "subscription";
+      scheduledDate?: string;
     };
     const order = await createOrder({
       customer: body.customer ?? "New customer",
@@ -31,9 +32,10 @@ export async function POST(request: Request) {
       service: body.service ?? "Outer wash",
       zone: body.zone ?? "West Bay",
       day: body.day ?? "Sunday",
-      slot: body.slot ?? "10:00 - 11:00",
+      slot: body.slot ?? "15:00 - 16:00",
       amount: body.amount ?? 0,
       kind: body.kind ?? "single",
+      scheduledDate: body.scheduledDate,
     });
 
     return NextResponse.json({ order }, { status: 201 });

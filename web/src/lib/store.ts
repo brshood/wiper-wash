@@ -1,7 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { getDb } from "@/lib/db";
 import { allowMongoInMemoryFallback } from "@/lib/mongodb-env";
-import { assignWorker, workOrders as seededOrders, type OrderStatus, workers } from "@/lib/wiper";
+import {
+  assignWorker,
+  combinedLocalDateTime,
+  weekdayValueFromISODate,
+  workOrders as seededOrders,
+  type OrderStatus,
+  workers,
+} from "@/lib/wiper";
 
 export type OrderRecord = {
   id: string;
@@ -34,6 +41,14 @@ export type SubscriptionRecord = {
   createdAt: string;
 };
 
+export type InquiryRecord = {
+  id: string;
+  name: string;
+  phone: string;
+  message: string;
+  createdAt: string;
+};
+
 type CreateOrderInput = {
   customer: string;
   plateNumber: string;
@@ -44,6 +59,8 @@ type CreateOrderInput = {
   amount: number;
   subscriptionId?: string;
   kind: "single" | "subscription";
+  /** YYYY-MM-DD — when set, `scheduledFor` uses this date with the slot start time. */
+  scheduledDate?: string;
 };
 
 type CreateSubscriptionInput = {
@@ -53,16 +70,23 @@ type CreateSubscriptionInput = {
   slot: string;
   zone: string;
   amount: number;
+  /** YYYY-MM-DD — first visit anchor; weekday is derived from this when present. */
+  scheduledDate?: string;
 };
 
 function inMemoryStore() {
   const globalKey = "__wiper_in_memory_store__";
   const state = globalThis as typeof globalThis & {
-    [globalKey]?: { orders: OrderRecord[]; subscriptions: SubscriptionRecord[] };
+    [globalKey]?: {
+      orders: OrderRecord[];
+      subscriptions: SubscriptionRecord[];
+      inquiries: InquiryRecord[];
+    };
   };
 
   if (!state[globalKey]) {
     state[globalKey] = {
+      inquiries: [] as InquiryRecord[],
       orders: seededOrders.map((order) => {
         const now = new Date().toISOString();
         return {
@@ -97,6 +121,25 @@ function nextWeekdayDate(weekday: string, slot: string, weekOffset = 0) {
   const { hours, minutes } = startTimeFromSlot(slot);
   date.setHours(hours, minutes, 0, 0);
   return date;
+}
+
+function subscriptionOccurrenceIsoDates(
+  scheduledDate: string | undefined,
+  weekday: string,
+  slot: string,
+  count: number,
+): string[] {
+  if (scheduledDate && /^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)) {
+    const first = combinedLocalDateTime(scheduledDate, slot);
+    return Array.from({ length: count }, (_, index) => {
+      const d = new Date(first);
+      d.setDate(d.getDate() + index * 7);
+      return d.toISOString();
+    });
+  }
+  return Array.from({ length: count }, (_, index) =>
+    nextWeekdayDate(weekday, slot, index).toISOString(),
+  );
 }
 
 function inferStatus(zone: string) {
@@ -139,7 +182,10 @@ export async function createOrder(input: CreateOrderInput) {
     worker: worker?.name,
     kind: input.kind,
     subscriptionId: input.subscriptionId,
-    scheduledFor: nextWeekdayDate(input.day, input.slot).toISOString(),
+    scheduledFor:
+      input.scheduledDate && /^\d{4}-\d{2}-\d{2}$/.test(input.scheduledDate)
+        ? combinedLocalDateTime(input.scheduledDate, input.slot).toISOString()
+        : nextWeekdayDate(input.day, input.slot).toISOString(),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -194,11 +240,21 @@ export async function listSubscriptions() {
 }
 
 export async function createSubscription(input: CreateSubscriptionInput) {
+  const resolvedWeekday = input.scheduledDate
+    ? weekdayValueFromISODate(input.scheduledDate)
+    : input.weekday;
+  const scheduleTimes = subscriptionOccurrenceIsoDates(
+    input.scheduledDate,
+    resolvedWeekday,
+    input.slot,
+    4,
+  );
+
   const subscription: SubscriptionRecord = {
     id: `SUB-${randomUUID().slice(0, 8).toUpperCase()}`,
     customer: input.customer,
     plateNumber: input.plateNumber,
-    weekday: input.weekday,
+    weekday: resolvedWeekday,
     slot: input.slot,
     zone: input.zone,
     amount: input.amount,
@@ -211,19 +267,19 @@ export async function createSubscription(input: CreateSubscriptionInput) {
     const worker = assignWorker(input.zone);
     const now = new Date().toISOString();
     return {
-      id: `WO-${Date.now().toString().slice(-4)}${index + 1}`,
+      id: `WO-${Date.now()}-${index}-${randomUUID().slice(0, 4)}`,
       customer: input.customer,
       plateNumber: input.plateNumber,
       service: "Monthly subscription",
       status: inferStatus(input.zone),
       zone: input.zone,
-      day: input.weekday,
+      day: resolvedWeekday,
       slot: input.slot,
       worker: worker?.name,
       amount: input.amount,
       kind: "subscription",
       subscriptionId: subscription.id,
-      scheduledFor: nextWeekdayDate(input.weekday, input.slot, index).toISOString(),
+      scheduledFor: scheduleTimes[index] ?? now,
       createdAt: now,
       updatedAt: now,
     };
@@ -246,4 +302,44 @@ export async function createSubscription(input: CreateSubscriptionInput) {
 
 export function detectZone(address: string) {
   return inferZone(address);
+}
+
+export async function listInquiries() {
+  try {
+    const db = await getDb();
+    return (await db
+      .collection<InquiryRecord>("inquiries")
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .toArray()) as InquiryRecord[];
+  } catch (error) {
+    if (!allowMongoInMemoryFallback()) throw error;
+    console.warn("[wiper] listInquiries: Mongo unavailable, using in-memory store.", error);
+    return [...inMemoryStore().inquiries].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }
+}
+
+export async function createInquiry(input: { name: string; phone: string; message: string }) {
+  const inquiry: InquiryRecord = {
+    id: `INQ-${Date.now().toString().slice(-8)}`,
+    name: input.name.trim() || "Visitor",
+    phone: input.phone.trim(),
+    message: input.message.trim(),
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    const db = await getDb();
+    await db.collection<InquiryRecord>("inquiries").insertOne(inquiry);
+  } catch (error) {
+    if (!allowMongoInMemoryFallback()) throw error;
+    console.warn("[wiper] createInquiry: Mongo unavailable, using in-memory store.", error);
+    inMemoryStore().inquiries.unshift(inquiry);
+  }
+
+  console.info("[wiper] Admin notification: new inquiry", inquiry.id, inquiry.phone);
+  return inquiry;
 }

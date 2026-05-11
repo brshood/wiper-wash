@@ -102,6 +102,8 @@ html {
 
 .logo-montage {
   animation: montage-exit 520ms 2620ms ease forwards;
+  /* Allow taps to reach the page beneath; splash is visual-only (fixes blocked hero CTAs on mobile). */
+  pointer-events: none;
 }
 
 .montage-flash {
