@@ -1,5 +1,11 @@
 export type Locale = "en" | "ar";
 export type ServiceKind = "single" | "subscription";
+/** One-time pricing: salon uses the lower band; SUV uses the upper band. */
+export type VehicleClass = "salon" | "suv";
+
+/** Public Instagram (override with NEXT_PUBLIC_INSTAGRAM_URL). */
+export const INSTAGRAM_URL =
+  process.env.NEXT_PUBLIC_INSTAGRAM_URL?.trim() || "https://www.instagram.com/wiperqa/";
 export type OrderStatus =
   | "new"
   | "assigned"
@@ -238,6 +244,18 @@ export const bookCopy = {
     en: "Quick Wipe, Wax Wipe, or Deep Wipe — pay once.",
     ar: "مسحة سريعة، مسحة شمعية، أو مسحة عميقة — ادفع مرة واحدة.",
   },
+  vehicleKicker: { en: "Vehicle type", ar: "نوع المركبة" },
+  vehicleTitle: { en: "Salon or SUV?", ar: "سيدان أم دفع رباعي؟" },
+  vehicleSalonTitle: { en: "Salon / sedan", ar: "سيدان / سالون" },
+  vehicleSalonHint: {
+    en: "Uses the lower price in each service range.",
+    ar: "يُطبَّق السعر الأدنى لكل خدمة.",
+  },
+  vehicleSuvTitle: { en: "SUV", ar: "دفع رباعي" },
+  vehicleSuvHint: {
+    en: "Uses the upper price in each service range.",
+    ar: "يُطبَّق السعر الأعلى لكل خدمة.",
+  },
   singleKicker: { en: "One time service", ar: "خدمة لمرة واحدة" },
   singleTitle: { en: "Choose your service.", ar: "اختر خدمتك." },
   continue: { en: "Continue", ar: "متابعة" },
@@ -413,9 +431,16 @@ export function formatQarRange(locale: Locale, min: number, max: number) {
   return `${formatQar(min, locale)}–${formatQar(max, locale)}`;
 }
 
-export function calculatePrice(serviceId: string) {
+/** Amount charged for a one-time service given salon (min) vs SUV (max of band). */
+export function priceForVehicleClass(service: ServiceOption | undefined, vehicleClass: VehicleClass): number {
+  if (!service) return 0;
+  if (service.kind === "subscription") return service.price;
+  return vehicleClass === "suv" ? (service.priceMax ?? service.price) : service.price;
+}
+
+export function calculatePrice(serviceId: string, vehicleClass: VehicleClass = "salon") {
   const service = services.find((item) => item.id === serviceId);
-  return service?.price ?? 0;
+  return priceForVehicleClass(service, vehicleClass);
 }
 
 export function isSlotAvailable(slot: string) {

@@ -534,6 +534,27 @@ html {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
+/* /book: allow the main column to scroll on short phones (subscription step, etc.) */
+.booking-page.mobile-fit-screen {
+  display: flex;
+  flex-direction: column;
+}
+
+.booking-page .mobile-fit-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.booking-page .booking-slide {
+  justify-items: center;
+  align-content: start;
+}
+
 @keyframes booking-slide-in {
   from {
     opacity: 0;

@@ -13,6 +13,7 @@ import {
   formatQar,
   formatQarRange,
   isSlotAvailable,
+  priceForVehicleClass,
   services,
   timeSlots,
   weekdayValueFromISODate,
@@ -20,15 +21,16 @@ import {
   SERVICE_LOCATIONS,
   type Locale,
   type ServiceKind,
+  type VehicleClass,
 } from "@/lib/wiper";
 import { toggleLocale, usePreferredLocale } from "@/lib/locale";
 import { ServiceLocationModal } from "@/components/ServiceLocationModal";
 
-type Step = "choice" | "single-service" | "subscription" | "details";
+type Step = "choice" | "vehicle-type" | "single-service" | "subscription" | "details";
 
 function bookingProgressIndex(step: Step): number {
   if (step === "choice") return 0;
-  if (step === "single-service" || step === "subscription") return 1;
+  if (step === "vehicle-type" || step === "single-service" || step === "subscription") return 1;
   return 2;
 }
 
@@ -126,6 +128,7 @@ export default function BookPage() {
   const [step, setStep] = useState<Step>("choice");
   const [kind, setKind] = useState<ServiceKind | null>(null);
   const [serviceId, setServiceId] = useState("quick-wipe");
+  const [vehicleClass, setVehicleClass] = useState<VehicleClass>("salon");
   const [agreed, setAgreed] = useState(false);
   const [serviceDate, setServiceDate] = useState(() => formatISODateLocal(new Date()));
   const [slot, setSlot] = useState("15:00 - 16:00");
@@ -155,8 +158,8 @@ export default function BookPage() {
       const sub = services.find((s) => s.id === serviceId && s.kind === "subscription");
       return sub?.price ?? 210;
     }
-    return calculatePrice(serviceId);
-  }, [kind, serviceId]);
+    return calculatePrice(serviceId, vehicleClass);
+  }, [kind, serviceId, vehicleClass]);
   const promoResult = useMemo(
     () => calculatePromoDiscount(amount, appliedPromo),
     [amount, appliedPromo],
@@ -187,7 +190,8 @@ export default function BookPage() {
 
     if (nextKind === "single") {
       setServiceId("quick-wipe");
-      setStep("single-service");
+      setVehicleClass("salon");
+      setStep("vehicle-type");
       return;
     }
 
@@ -198,8 +202,12 @@ export default function BookPage() {
 
   function goBack() {
     if (step === "choice") return;
-    if (step === "single-service" || step === "subscription") {
+    if (step === "vehicle-type" || step === "subscription") {
       setStep("choice");
+      return;
+    }
+    if (step === "single-service") {
+      setStep("vehicle-type");
       return;
     }
     setStep(kind === "subscription" ? "subscription" : "single-service");
@@ -233,16 +241,18 @@ export default function BookPage() {
           return;
         }
       } else {
+        const baseService =
+          selectedService?.label.en ??
+          services.find((service) => service.id === serviceId)?.label.en ??
+          "Quick Wipe";
+        const vehicleLabel = vehicleClass === "suv" ? "SUV" : "Salon";
         const response = await fetch("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             customer: customerName.trim(),
             plateNumber: plateNumber.trim(),
-            service:
-              selectedService?.label.en ??
-              services.find((service) => service.id === serviceId)?.label.en ??
-              "Quick Wipe",
+            service: `${baseService} · ${vehicleLabel}`,
             zone,
             day: weekday,
             slot,
@@ -270,7 +280,7 @@ export default function BookPage() {
   return (
     <main
       dir={isRtl ? "rtl" : "ltr"}
-      className="mobile-fit-screen relative bg-[#f7f7f6] text-[#1E3951]"
+      className="booking-page mobile-fit-screen relative bg-[#f7f7f6] text-[#1E3951]"
     >
       <div className="absolute -left-36 top-20 h-72 w-[34rem] rotate-[-18deg] rounded-full bg-[#FF007D]/12 blur-3xl" />
       <div className="absolute -right-40 bottom-20 h-80 w-[40rem] rounded-full bg-[#449883]/14 blur-3xl" />
@@ -329,7 +339,7 @@ export default function BookPage() {
 
         <div
           key={step}
-          className="booking-slide mx-auto grid min-h-0 w-full max-w-6xl flex-1 place-items-center"
+          className="booking-slide mx-auto grid min-h-0 w-full max-w-6xl flex-1 self-stretch pb-8 pt-1"
         >
           {step === "choice" && (
             <section className="mobile-fit-step w-full text-center">
@@ -362,6 +372,53 @@ export default function BookPage() {
                   <h2 className="mt-4 text-xl font-black sm:text-3xl">{bookCopy.oneTimeCardTitle[locale]}</h2>
                   <p className="mt-2 text-xs leading-5 text-[#1E3951]/58 sm:text-base">
                     {bookCopy.oneTimeCardBody[locale]}
+                  </p>
+                </button>
+              </div>
+            </section>
+          )}
+
+          {step === "vehicle-type" && (
+            <section className="mobile-fit-step w-full">
+              <div className="mx-auto max-w-3xl text-center">
+                <p className="text-xs font-black uppercase tracking-[0.38em] text-[#FF007D]">
+                  {bookCopy.vehicleKicker[locale]}
+                </p>
+                <h1 className="mt-2 text-3xl font-black tracking-[-0.06em] sm:text-6xl">
+                  {bookCopy.vehicleTitle[locale]}
+                </h1>
+              </div>
+              <div className="mobile-fit-grid mx-auto mt-6 grid max-w-3xl grid-cols-2 gap-3 sm:mt-8 sm:gap-6">
+                <button
+                  type="button"
+                  className="mobile-fit-card focus-ring rounded-[2rem] border border-[#1E3951]/10 bg-white p-5 text-center shadow-[0_24px_70px_rgba(30,57,81,0.10)] transition hover:-translate-y-1 sm:p-8"
+                  onClick={() => {
+                    setVehicleClass("salon");
+                    setStep("single-service");
+                  }}
+                >
+                  <div className="mx-auto grid h-16 w-16 place-items-center rounded-[1.35rem] bg-[#FF007D] text-lg font-black text-white shadow-[0_14px_35px_rgba(255,0,125,0.22)] sm:h-20 sm:w-20 sm:text-xl">
+                    SL
+                  </div>
+                  <h2 className="mt-4 text-xl font-black sm:text-3xl">{bookCopy.vehicleSalonTitle[locale]}</h2>
+                  <p className="mt-2 text-xs leading-5 text-[#1E3951]/58 sm:text-base">
+                    {bookCopy.vehicleSalonHint[locale]}
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  className="mobile-fit-card focus-ring rounded-[2rem] border border-[#1E3951]/10 bg-white p-5 text-center shadow-[0_24px_70px_rgba(30,57,81,0.10)] transition hover:-translate-y-1 sm:p-8"
+                  onClick={() => {
+                    setVehicleClass("suv");
+                    setStep("single-service");
+                  }}
+                >
+                  <div className="mx-auto grid h-16 w-16 place-items-center rounded-[1.35rem] bg-[#1E3951] text-xs font-black tracking-[0.08em] text-white shadow-[0_14px_35px_rgba(30,57,81,0.22)] sm:h-20 sm:w-20 sm:text-sm">
+                    SUV
+                  </div>
+                  <h2 className="mt-4 text-xl font-black sm:text-3xl">{bookCopy.vehicleSuvTitle[locale]}</h2>
+                  <p className="mt-2 text-xs leading-5 text-[#1E3951]/58 sm:text-base">
+                    {bookCopy.vehicleSuvHint[locale]}
                   </p>
                 </button>
               </div>
@@ -401,7 +458,7 @@ export default function BookPage() {
                       {service.description[locale]}
                     </p>
                     <p className="mt-2 text-lg font-black text-[#FF007D] sm:text-xl">
-                      {formatQarRange(locale, service.price, service.priceMax ?? service.price)}
+                      {formatQar(priceForVehicleClass(service, vehicleClass), locale)}
                     </p>
                   </button>
                 ))}
@@ -648,8 +705,17 @@ export default function BookPage() {
                     </div>
                     <div className="flex justify-between gap-4">
                       <span>{bookCopy.service[locale]}</span>
-                      <strong className="text-white">
+                      <strong className="text-end text-white">
                         {selectedService?.label[locale] ?? bookCopy.notSelected[locale]}
+                        {kind === "single"
+                          ? locale === "ar"
+                            ? vehicleClass === "suv"
+                              ? " · دفع رباعي"
+                              : " · سيدان"
+                            : vehicleClass === "suv"
+                              ? " · SUV"
+                              : " · Salon"
+                          : ""}
                       </strong>
                     </div>
                     <div className="flex justify-between gap-4">

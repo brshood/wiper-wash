@@ -8,7 +8,7 @@ import { HowItWorksFlashcards } from "@/components/HowItWorksFlashcards";
 import { LogoMontage } from "@/components/LogoMontage";
 import { usePreferredLocale, toggleLocale } from "@/lib/locale";
 import type { Locale } from "@/lib/wiper";
-import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/wiper";
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL, INSTAGRAM_URL } from "@/lib/wiper";
 
 const heroPrimaryCtaClass =
   "relative z-[60] touch-manipulation focus-ring rounded-full bg-[#FF007D] px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] text-white shadow-[0_20px_60px_rgba(255,0,125,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(255,0,125,0.42)] sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em]";
@@ -462,11 +462,19 @@ function FinalCTASection({ locale }: { locale: Locale }) {
         <p className="mt-5 text-xl leading-9 text-white/72">
           {locale === "ar" ? "احجز WIPER اليوم واحصل على غسيل سيارتك أينما كنت." : "Book WIPER today and get your car washed wherever you are."}
         </p>
-        <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
+        <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
           <PrimaryCta>{locale === "ar" ? "احجز غسيل" : "Book a Wash"}</PrimaryCta>
           <SecondaryCta href="#subscription" dark>
             {locale === "ar" ? "عرض الخدمات" : "View Services"}
           </SecondaryCta>
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="focus-ring inline-flex items-center justify-center rounded-full border border-white/22 bg-white/8 px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] text-white transition hover:-translate-y-0.5 hover:bg-white/14 sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em]"
+          >
+            {locale === "ar" ? "إنستغرام" : "Instagram @wiperqa"}
+          </a>
         </div>
       </div>
     </section>
@@ -600,7 +608,7 @@ function ContactSection({ locale }: { locale: Locale }) {
 function Footer({ locale }: { locale: Locale }) {
   return (
     <footer className="bg-[#262626] px-6 py-10 text-white sm:px-8 lg:px-10">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:justify-between">
         <Link href="/" className="block w-32" aria-label="WIPER home">
           <Image
             alt="WIPER logo"
@@ -610,15 +618,25 @@ function Footer({ locale }: { locale: Locale }) {
             width={521}
           />
         </Link>
-        <p className="text-sm font-bold text-white/58">
+        <p className="text-center text-sm font-bold text-white/58 sm:text-start">
           {locale === "ar" ? "غسيل سيارات متنقل عند باب منزلك في قطر." : "Mobile car wash at your doorstep in Qatar."}
         </p>
-        <a
-          href={`tel:${CONTACT_PHONE_TEL}`}
-          className="text-sm font-black text-[#FF007D] transition hover:text-white"
-        >
-          {CONTACT_PHONE_DISPLAY}
-        </a>
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-end">
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-black text-white/88 transition hover:text-[#FF007D]"
+          >
+            {locale === "ar" ? "إنستغرام" : "Instagram"}
+          </a>
+          <a
+            href={`tel:${CONTACT_PHONE_TEL}`}
+            className="text-sm font-black text-[#FF007D] transition hover:text-white"
+          >
+            {CONTACT_PHONE_DISPLAY}
+          </a>
+        </div>
       </div>
     </footer>
   );

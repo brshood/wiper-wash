@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
-import { calculatePrice, services } from "@/lib/wiper";
+import { calculatePrice, services, type VehicleClass } from "@/lib/wiper";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as {
     serviceId?: string;
     subscription?: boolean;
     planId?: string;
+    vehicleClass?: VehicleClass;
   };
+
+  const vehicle = body.vehicleClass === "suv" ? "suv" : "salon";
 
   const amount = body.subscription
     ? services.find((service) => service.id === (body.planId ?? "sub-4-row"))?.price ?? 0
-    : calculatePrice(body.serviceId ?? "quick-wipe");
+    : calculatePrice(body.serviceId ?? "quick-wipe", vehicle);
 
   return NextResponse.json({
     provider: "stripe",
