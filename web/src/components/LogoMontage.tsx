@@ -13,14 +13,18 @@ export function LogoMontage() {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setVisible(false), 3100);
+    const timer = window.setTimeout(() => setVisible(false), 2800);
     return () => window.clearTimeout(timer);
   }, []);
 
   if (!visible) return null;
 
   return (
-    <div className="logo-montage fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-white">
+    <div
+      className="logo-montage fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-white"
+      style={{ pointerEvents: "none" }}
+      aria-hidden
+    >
       <div className="montage-flash" />
       {montageFrames.map((frame, index) => (
         <div

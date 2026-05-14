@@ -11,8 +11,8 @@ import {
   formatISODateLocal,
   formatPromoAppliedMessage,
   formatQar,
+  formatQarRange,
   isSlotAvailable,
-  polishOptionDefs,
   services,
   timeSlots,
   weekdayValueFromISODate,
@@ -24,7 +24,13 @@ import {
 import { toggleLocale, usePreferredLocale } from "@/lib/locale";
 import { ServiceLocationModal } from "@/components/ServiceLocationModal";
 
-type Step = "choice" | "single-service" | "subscription" | "polish" | "details";
+type Step = "choice" | "single-service" | "subscription" | "details";
+
+function bookingProgressIndex(step: Step): number {
+  if (step === "choice") return 0;
+  if (step === "single-service" || step === "subscription") return 1;
+  return 2;
+}
 
 function ServiceIcon({ label, variant }: { label: string; variant?: "dark" }) {
   return (
@@ -61,14 +67,16 @@ function ServiceIcon({ label, variant }: { label: string; variant?: "dark" }) {
 
 function serviceCardAbbrev(serviceId: string, loc: Locale) {
   switch (serviceId) {
-    case "outer":
-      return bookCopy.serviceIconOuter[loc];
-    case "inner-outer":
-      return bookCopy.serviceIconInnerOuter[loc];
-    case "vip":
-      return bookCopy.serviceIconVip[loc];
-    case "polish":
-      return bookCopy.serviceIconPolish[loc];
+    case "quick-wipe":
+      return bookCopy.serviceIconQuick[loc];
+    case "wax-wipe":
+      return bookCopy.serviceIconWax[loc];
+    case "deep-wipe":
+      return bookCopy.serviceIconDeep[loc];
+    case "sub-4-row":
+      return bookCopy.serviceIconSub4[loc];
+    case "sub-8-pool":
+      return bookCopy.serviceIconSub8[loc];
     default:
       return "";
   }
@@ -117,8 +125,7 @@ export default function BookPage() {
   const { locale, setLocale, isRtl } = usePreferredLocale("en");
   const [step, setStep] = useState<Step>("choice");
   const [kind, setKind] = useState<ServiceKind | null>(null);
-  const [serviceId, setServiceId] = useState("outer");
-  const [polishIds, setPolishIds] = useState<string[]>([]);
+  const [serviceId, setServiceId] = useState("quick-wipe");
   const [agreed, setAgreed] = useState(false);
   const [serviceDate, setServiceDate] = useState(() => formatISODateLocal(new Date()));
   const [slot, setSlot] = useState("15:00 - 16:00");
@@ -137,18 +144,19 @@ export default function BookPage() {
   const [promoMessage, setPromoMessage] = useState("");
 
   const activeServices = services.filter((service) => service.kind === "single");
+  const subscriptionPlans = services.filter((service) => service.kind === "subscription");
   const selectedService = services.find((service) => service.id === serviceId);
   const slotOptions = useMemo(() => {
     const open = timeSlots.filter((item) => isSlotAvailable(item));
     return open.length > 0 ? open : timeSlots;
   }, []);
-  const amount = useMemo(
-    () =>
-      kind === "subscription"
-        ? services.find((service) => service.id === "monthly")?.price ?? 0
-        : calculatePrice(serviceId, polishIds.length),
-    [kind, polishIds.length, serviceId],
-  );
+  const amount = useMemo(() => {
+    if (kind === "subscription") {
+      const sub = services.find((s) => s.id === serviceId && s.kind === "subscription");
+      return sub?.price ?? 210;
+    }
+    return calculatePrice(serviceId);
+  }, [kind, serviceId]);
   const promoResult = useMemo(
     () => calculatePromoDiscount(amount, appliedPromo),
     [amount, appliedPromo],
@@ -171,19 +179,20 @@ export default function BookPage() {
     /^\d{4}-\d{2}-\d{2}$/.test(serviceDate) &&
     !!slot;
 
-  const stepIndex = ["choice", "single-service", "subscription", "polish", "details"].indexOf(step);
+  const stepIndex = bookingProgressIndex(step);
 
   function chooseKind(nextKind: ServiceKind) {
     setKind(nextKind);
     setPaid(false);
 
     if (nextKind === "single") {
-      setServiceId("outer");
+      setServiceId("quick-wipe");
       setStep("single-service");
       return;
     }
 
-    setServiceId("monthly");
+    setServiceId("sub-4-row");
+    setAgreed(false);
     setStep("subscription");
   }
 
@@ -193,11 +202,7 @@ export default function BookPage() {
       setStep("choice");
       return;
     }
-    if (step === "polish") {
-      setStep("single-service");
-      return;
-    }
-    setStep(kind === "subscription" ? "subscription" : serviceId === "polish" ? "polish" : "single-service");
+    setStep(kind === "subscription" ? "subscription" : "single-service");
   }
 
   async function completeBooking() {
@@ -219,6 +224,7 @@ export default function BookPage() {
             slot,
             zone,
             scheduledDate: serviceDate,
+            planId: serviceId,
           }),
         });
 
@@ -236,7 +242,7 @@ export default function BookPage() {
             service:
               selectedService?.label.en ??
               services.find((service) => service.id === serviceId)?.label.en ??
-              "Outer wash",
+              "Quick Wipe",
             zone,
             day: weekday,
             slot,
@@ -311,11 +317,11 @@ export default function BookPage() {
 
       <section className="mobile-fit-body relative z-10 mx-auto flex max-w-7xl flex-col px-4 sm:px-6">
         <div className="mx-auto mb-3 flex w-full max-w-md gap-2">
-          {[0, 1, 2, 3].map((item) => (
+          {[0, 1, 2].map((item) => (
             <div
               key={item}
               className={`h-2 flex-1 rounded-full ${
-                item <= Math.min(stepIndex, 3) ? "bg-[#FF007D]" : "bg-[#1E3951]/10"
+                item <= stepIndex ? "bg-[#FF007D]" : "bg-[#1E3951]/10"
               }`}
             />
           ))}
@@ -379,7 +385,7 @@ export default function BookPage() {
                     type="button"
                     onClick={() => {
                       setServiceId(service.id);
-                      setStep(service.id === "polish" ? "polish" : "details");
+                      setStep("details");
                     }}
                     className={`mobile-fit-card focus-ring rounded-[1.6rem] border bg-white p-3 text-center shadow-[0_18px_46px_rgba(30,57,81,0.10)] transition hover:-translate-y-1 sm:p-4 ${
                       serviceId === service.id
@@ -395,55 +401,11 @@ export default function BookPage() {
                       {service.description[locale]}
                     </p>
                     <p className="mt-2 text-lg font-black text-[#FF007D] sm:text-xl">
-                      {formatQar(service.price, locale)}
+                      {formatQarRange(locale, service.price, service.priceMax ?? service.price)}
                     </p>
                   </button>
                 ))}
               </div>
-            </section>
-          )}
-
-          {step === "polish" && (
-            <section className="w-full text-center">
-              <p className="text-xs font-black uppercase tracking-[0.38em] text-[#FF007D]">
-                {bookCopy.polishKicker[locale]}
-              </p>
-              <h1 className="mt-2 text-4xl font-black tracking-[-0.06em] sm:text-7xl">
-                {bookCopy.polishTitle[locale]}
-              </h1>
-              <div className="mx-auto mt-5 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-                {polishOptionDefs.map((option) => (
-                  <label
-                    key={option.id}
-                    className={`flex min-h-16 items-center gap-2 rounded-2xl border p-3 text-start text-xs font-black sm:min-h-24 sm:text-sm ${
-                      polishIds.includes(option.id)
-                        ? "border-[#FF007D] bg-[#FF007D]/10"
-                        : "border-[#1E3951]/10 bg-white"
-                    }`}
-                  >
-                    <input
-                      checked={polishIds.includes(option.id)}
-                      onChange={(event) =>
-                        setPolishIds((items) =>
-                          event.target.checked
-                            ? [...items, option.id]
-                            : items.filter((item) => item !== option.id),
-                        )
-                      }
-                      type="checkbox"
-                    />
-                    <span>{option.label[locale]}</span>
-                  </label>
-                ))}
-              </div>
-              <button
-                className="focus-ring mt-5 rounded-full bg-[#FF007D] px-8 py-4 text-sm font-black uppercase tracking-[0.2em] text-white disabled:opacity-40"
-                disabled={polishIds.length === 0}
-                onClick={() => setStep("details")}
-                type="button"
-              >
-                {bookCopy.continue[locale]}
-              </button>
             </section>
           )}
 
@@ -460,14 +422,39 @@ export default function BookPage() {
                 />
               </div>
               <div className="rounded-[2rem] bg-white/90 p-5 text-center shadow-[0_24px_70px_rgba(30,57,81,0.10)] backdrop-blur sm:p-8 sm:text-start">
-                <ServiceIcon label={bookCopy.serviceIconSub[locale]} variant="dark" />
-                <p className="mt-5 text-xs font-black uppercase tracking-[0.38em] text-[#FF007D]">
+                <p className="text-xs font-black uppercase tracking-[0.38em] text-[#FF007D]">
                   {bookCopy.subscriptionKicker[locale]}
                 </p>
-                <h1 className="mt-2 text-4xl font-black leading-none tracking-[-0.06em] sm:text-7xl">
-                  {bookCopy.subscriptionHeroTitle[locale]}
+                <h1 className="mt-2 text-3xl font-black leading-none tracking-[-0.06em] sm:text-6xl">
+                  {bookCopy.pickPlanTitle[locale]}
                 </h1>
-                <p className="mt-4 text-sm leading-6 text-[#1E3951]/62 sm:text-lg sm:leading-8">
+                <p className="mt-3 text-sm font-black text-[#1E3951]/72 sm:text-base">
+                  {bookCopy.subscriptionHeroTitle[locale]}
+                </p>
+                <div className="mx-auto mt-5 grid max-w-xl grid-cols-1 gap-3 sm:mx-0 sm:grid-cols-2">
+                  {subscriptionPlans.map((plan) => (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      onClick={() => setServiceId(plan.id)}
+                      className={`focus-ring flex flex-col items-center rounded-[1.6rem] border bg-white p-4 text-center shadow-[0_14px_40px_rgba(30,57,81,0.08)] transition hover:-translate-y-0.5 sm:items-start sm:p-5 sm:text-start ${
+                        serviceId === plan.id ? "border-[#FF007D]" : "border-[#1E3951]/10"
+                      }`}
+                    >
+                      <ServiceIcon label={serviceCardAbbrev(plan.id, locale)} variant="dark" />
+                      <span className="mt-3 text-lg font-black text-[#1E3951] sm:text-xl">
+                        {plan.label[locale]}
+                      </span>
+                      <span className="mt-1 text-xs leading-5 text-[#1E3951]/58 sm:text-sm">
+                        {plan.description[locale]}
+                      </span>
+                      <span className="mt-3 text-base font-black text-[#FF007D] sm:text-lg">
+                        {formatQarRange(locale, plan.price, plan.priceMax ?? plan.price)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-5 text-sm leading-6 text-[#1E3951]/62 sm:text-lg sm:leading-8">
                   {bookCopy.subscriptionHeroBody[locale]}
                 </p>
                 <label className="mt-4 flex items-center gap-3 rounded-2xl bg-[#f7f7f6] p-4 text-start text-sm font-bold">
@@ -662,10 +649,7 @@ export default function BookPage() {
                     <div className="flex justify-between gap-4">
                       <span>{bookCopy.service[locale]}</span>
                       <strong className="text-white">
-                        {kind === "subscription"
-                          ? services.find((service) => service.id === "monthly")
-                              ?.label[locale]
-                          : selectedService?.label[locale] ?? bookCopy.notSelected[locale]}
+                        {selectedService?.label[locale] ?? bookCopy.notSelected[locale]}
                       </strong>
                     </div>
                     <div className="flex justify-between gap-4">

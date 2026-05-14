@@ -72,6 +72,8 @@ type CreateSubscriptionInput = {
   amount: number;
   /** YYYY-MM-DD — first visit anchor; weekday is derived from this when present. */
   scheduledDate?: string;
+  visitCount: number;
+  packageLabelEn: string;
 };
 
 function inMemoryStore() {
@@ -123,23 +125,36 @@ function nextWeekdayDate(weekday: string, slot: string, weekOffset = 0) {
   return date;
 }
 
-function subscriptionOccurrenceIsoDates(
+/** Weekly anchor: one visit per week on the chosen weekday. */
+function subscriptionVisitIsoDates(
   scheduledDate: string | undefined,
   weekday: string,
   slot: string,
-  count: number,
+  visitCount: number,
 ): string[] {
-  if (scheduledDate && /^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)) {
-    const first = combinedLocalDateTime(scheduledDate, slot);
-    return Array.from({ length: count }, (_, index) => {
+  const first =
+    scheduledDate && /^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)
+      ? combinedLocalDateTime(scheduledDate, slot)
+      : nextWeekdayDate(weekday, slot, 0);
+
+  if (visitCount <= 4) {
+    return Array.from({ length: visitCount }, (_, index) => {
       const d = new Date(first);
       d.setDate(d.getDate() + index * 7);
       return d.toISOString();
     });
   }
-  return Array.from({ length: count }, (_, index) =>
-    nextWeekdayDate(weekday, slot, index).toISOString(),
-  );
+
+  const out: string[] = [];
+  for (let week = 0; week < 4; week++) {
+    for (let visitInWeek = 0; visitInWeek < 2; visitInWeek++) {
+      if (out.length >= visitCount) break;
+      const d = new Date(first);
+      d.setDate(d.getDate() + week * 7 + visitInWeek * 3);
+      out.push(d.toISOString());
+    }
+  }
+  return out;
 }
 
 function inferStatus(zone: string) {
@@ -243,11 +258,11 @@ export async function createSubscription(input: CreateSubscriptionInput) {
   const resolvedWeekday = input.scheduledDate
     ? weekdayValueFromISODate(input.scheduledDate)
     : input.weekday;
-  const scheduleTimes = subscriptionOccurrenceIsoDates(
+  const scheduleTimes = subscriptionVisitIsoDates(
     input.scheduledDate,
     resolvedWeekday,
     input.slot,
-    4,
+    input.visitCount,
   );
 
   const subscription: SubscriptionRecord = {
@@ -259,18 +274,20 @@ export async function createSubscription(input: CreateSubscriptionInput) {
     zone: input.zone,
     amount: input.amount,
     status: "active",
-    generatedWorkOrders: 4,
+    generatedWorkOrders: input.visitCount,
     createdAt: new Date().toISOString(),
   };
 
-  const generatedOrders: OrderRecord[] = Array.from({ length: 4 }).map((_, index) => {
+  const lineService = `Subscription · ${input.packageLabelEn}`;
+
+  const generatedOrders: OrderRecord[] = Array.from({ length: input.visitCount }).map((_, index) => {
     const worker = assignWorker(input.zone);
     const now = new Date().toISOString();
     return {
       id: `WO-${Date.now()}-${index}-${randomUUID().slice(0, 4)}`,
       customer: input.customer,
       plateNumber: input.plateNumber,
-      service: "Monthly subscription",
+      service: lineService,
       status: inferStatus(input.zone),
       zone: input.zone,
       day: resolvedWeekday,

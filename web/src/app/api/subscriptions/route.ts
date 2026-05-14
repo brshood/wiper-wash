@@ -23,9 +23,12 @@ export async function POST(request: Request) {
       slot?: string;
       zone?: string;
       scheduledDate?: string;
+      planId?: string;
     };
-    const monthly = services.find((service) => service.id === "monthly");
-    const amount = monthly?.price ?? 0;
+    const planId = body.planId === "sub-8-pool" ? "sub-8-pool" : "sub-4-row";
+    const plan = services.find((service) => service.id === planId && service.kind === "subscription");
+    const amount = plan?.price ?? 0;
+    const visitCount = planId === "sub-8-pool" ? 8 : 4;
     const { subscription, generatedOrders } = await createSubscription({
       customer: body.customer ?? "guest",
       plateNumber: body.plateNumber ?? "QTR-00000",
@@ -34,14 +37,17 @@ export async function POST(request: Request) {
       zone: body.zone ?? "West Bay",
       amount,
       scheduledDate: body.scheduledDate,
+      visitCount,
+      packageLabelEn: plan?.label.en ?? planId,
     });
 
     return NextResponse.json(
       {
         subscription: {
           ...subscription,
-          service: monthly?.label.en,
-          billingCycle: "monthly",
+          service: plan?.label.en,
+          billingCycle: "period",
+          planId,
           refundPolicy: "admin_manual_only",
         },
         generatedOrders,

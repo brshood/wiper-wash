@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "WIPER | Mobile Car Wash Qatar",
   description:
-    "Book single and monthly mobile car wash services in Qatar with WIPER.",
+    "Book Quick Wipe, Wax Wipe, or Deep Wipe in Qatar — plus 4 in a row and 8 pool subscriptions — with WIPER mobile car wash.",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",

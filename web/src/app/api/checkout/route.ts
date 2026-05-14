@@ -4,13 +4,13 @@ import { calculatePrice, services } from "@/lib/wiper";
 export async function POST(request: Request) {
   const body = (await request.json()) as {
     serviceId?: string;
-    polishOptions?: string[];
     subscription?: boolean;
+    planId?: string;
   };
 
   const amount = body.subscription
-    ? services.find((service) => service.id === "monthly")?.price ?? 0
-    : calculatePrice(body.serviceId ?? "outer", body.polishOptions?.length ?? 0);
+    ? services.find((service) => service.id === (body.planId ?? "sub-4-row"))?.price ?? 0
+    : calculatePrice(body.serviceId ?? "quick-wipe");
 
   return NextResponse.json({
     provider: "stripe",

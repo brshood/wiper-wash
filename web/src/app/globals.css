@@ -102,8 +102,12 @@ html {
 
 .logo-montage {
   animation: montage-exit 520ms 2620ms ease forwards;
-  /* Allow taps to reach the page beneath; splash is visual-only (fixes blocked hero CTAs on mobile). */
-  pointer-events: none;
+  /* Parent `pointer-events: none` does not stop children from receiving hits — block the whole subtree. */
+  pointer-events: none !important;
+}
+
+.logo-montage * {
+  pointer-events: none !important;
 }
 
 .montage-flash {
@@ -208,6 +212,17 @@ html {
 
 .how-flash-pin-active {
   opacity: 1;
+}
+
+/*
+ * While the pin layer is “off” it stays opacity:0 but remains position:fixed.
+ * Descendants like .how-flash-card-active use pointer-events:auto, which overrides
+ * the parent’s pointer-events:none — WebKit then keeps an invisible hit target
+ * centered on the viewport that blocks taps. Force the whole subtree inert until active.
+ */
+.how-flash-pin:not(.how-flash-pin-active),
+.how-flash-pin:not(.how-flash-pin-active) * {
+  pointer-events: none !important;
 }
 
 .how-flash-card-frame {

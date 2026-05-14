@@ -11,7 +11,7 @@ import type { Locale } from "@/lib/wiper";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/wiper";
 
 const heroPrimaryCtaClass =
-  "focus-ring rounded-full bg-[#FF007D] px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] text-white shadow-[0_20px_60px_rgba(255,0,125,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(255,0,125,0.42)] sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em]";
+  "relative z-[60] touch-manipulation focus-ring rounded-full bg-[#FF007D] px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] text-white shadow-[0_20px_60px_rgba(255,0,125,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(255,0,125,0.42)] sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em]";
 
 const trustBadges: Record<Locale, string[]> = {
   en: ["On-demand service", "Weekly subscriptions", "Professional staff", "Payment online"],
@@ -20,13 +20,13 @@ const trustBadges: Record<Locale, string[]> = {
 
 const howSteps: Record<Locale, Array<{ title: string; description: string }>> = {
   en: [
-    { title: "Choose Your Service", description: "Select one-time wash or monthly subscription." },
+    { title: "Choose Your Service", description: "Select a one-time wipe or a subscription plan." },
     { title: "Enter Your Details", description: "Add your name, phone number, service area, and notes." },
     { title: "Pay Online", description: "Securely pay based on the package you choose." },
     { title: "We Come to You", description: "WIPER staff arrive at your location and clean your car." },
   ],
   ar: [
-    { title: "اختر خدمتك", description: "اختر غسيلاً لمرة واحدة أو اشتراكاً شهرياً." },
+    { title: "اختر خدمتك", description: "اختر مسحة لمرة واحدة أو باقة اشتراك." },
     { title: "أدخل بياناتك", description: "أضف الاسم ورقم الهاتف ومنطقة الخدمة والملاحظات." },
     { title: "ادفع أونلاين", description: "ادفع بأمان حسب الباقة التي تختارها." },
     { title: "نصل إليك", description: "يصل فريق WIPER إلى موقعك ويقوم بتنظيف سيارتك." },
@@ -34,8 +34,8 @@ const howSteps: Record<Locale, Array<{ title: string; description: string }>> = 
 };
 
 const subscriptionFields: Record<Locale, string[]> = {
-  en: ["Preferred weekly day", "Customer name", "Phone number", "Service area", "Notes"],
-  ar: ["اليوم الأسبوعي المفضل", "اسم العميل", "رقم الهاتف", "منطقة الخدمة", "ملاحظات"],
+  en: ["Preferred weekly day", "Customer name", "Phone number", "Service area", "Notes", "4 in a row or 8 pool"],
+  ar: ["اليوم الأسبوعي المفضل", "اسم العميل", "رقم الهاتف", "منطقة الخدمة", "ملاحظات", "٤ متتالية أو حزمة ٨"],
 };
 
 const benefits: Record<Locale, Array<{ title: string; description: string }>> = {
@@ -82,13 +82,14 @@ const faqs: Record<Locale, Array<{ question: string; answer: string }>> = {
     answer: "Yes. You can book a single service wash anytime.",
   },
   {
-    question: "What services are available for single wash?",
-    answer: "Outer wash, inner + outer wash, VIP wash, and polish options.",
+    question: "What one-time services do you offer?",
+    answer:
+      "Quick Wipe (inside and outside), Wax Wipe (adds wax shine for a couple of days), and Deep Wipe (full package including vacuum, sanitize, optional engine wash, and perfuming).",
   },
   {
-    question: "Can I subscribe monthly?",
+    question: "What subscription plans are available?",
     answer:
-      "Yes. The subscription gives you weekly inner + outer washes for one month.",
+      "4 in a row includes one Quick Wipe per week. 8 pool includes two Quick Wipes per week and can be used across two cars.",
   },
   {
     question: "Can I choose the weekly day?",
@@ -102,8 +103,11 @@ const faqs: Record<Locale, Array<{ question: string; answer: string }>> = {
   ar: [
     { question: "هل أحتاج لإحضار السيارة إلى مكان معين؟", answer: "لا، WIPER يصل إلى موقعك." },
     { question: "هل يمكنني حجز غسيل لمرة واحدة؟", answer: "نعم، يمكنك الحجز في أي وقت." },
-    { question: "ما خدمات الغسيل المتاحة لمرة واحدة؟", answer: "غسيل خارجي، داخلي وخارجي، VIP، وخيارات التلميع." },
-    { question: "هل يمكن الاشتراك شهرياً؟", answer: "نعم، الاشتراك يشمل غسيلاً أسبوعياً داخلياً وخارجياً لمدة شهر." },
+    { question: "ما خدمات المسحة لمرة واحدة؟", answer: "مسحة سريعة (داخل وخارج)، مسحة شمعية (لمعان لعدة أيام)، ومسحة عميقة (مكنسة وتعقيم وغسيل محرك عند الطلب وعطور)." },
+    {
+      question: "ما باقات الاشتراك؟",
+      answer: "٤ متتالية تشمل مسحة سريعة أسبوعياً. حزمة ٨ تشمل مسحتين أسبوعياً ويمكن استخدامهما لسيارتين.",
+    },
     { question: "هل يمكنني اختيار اليوم الأسبوعي؟", answer: "نعم، يمكن اختيار اليوم الأسبوعي المفضل للخدمة." },
     { question: "كيف يتم الدفع؟", answer: "يتم الدفع أونلاين بعد اختيار الخدمة." },
   ],
@@ -363,12 +367,18 @@ function SubscriptionSection({ locale }: { locale: Locale }) {
         <div>
           <SectionHeading
             eyebrow={locale === "ar" ? "اشتراك" : "Subscription"}
-            title={locale === "ar" ? "اشتراك غسيل سيارات أسبوعي" : "Weekly Car Wash Subscription"}
-            description={locale === "ar" ? "اشترك مرة واحدة لتحصل على تنظيف أسبوعي طوال الشهر. اختر يوم الخدمة الأسبوعي المفضل وسيقوم WIPER بإنشاء أوامر عمل تلقائياً كل أسبوع." : "Subscribe once and get your car cleaned weekly for the entire month. Choose your preferred weekly service day, and WIPER will automatically generate work orders for staff every week."}
+            title={locale === "ar" ? "اشتراكات المسحة السريعة" : "Quick Wipe subscriptions"}
+            description={
+              locale === "ar"
+                ? "٤ متتالية (مسحة سريعة أسبوعياً) أو حزمة ٨ (مسحتان أسبوعياً، يمكن لسيارتين). اختر يومك ووقت الزيارة وادفع لكل فترة."
+                : "4 in a row (one Quick Wipe per week) or 8 pool (two per week, can cover two cars). Pick your day, arrival window, and pay per billing period."
+            }
             light
           />
           <div className="rounded-[2rem] border border-[#FF007D]/35 bg-[#FF007D]/12 p-6 text-lg font-black leading-8">
-            {locale === "ar" ? "الاشتراك الشهري متاح حالياً للغسيل الداخلي + الخارجي فقط." : "Monthly subscriptions are currently available only for inner + outer wash."}
+            {locale === "ar"
+              ? "٤ متتالية: ٢١٠–٢٥٠ ر.ق. حزمة ٨: ٤٢٠–٥٠٠ ر.ق."
+              : "4 in a row: 210–250 QAR. 8 pool: 420–500 QAR."}
           </div>
         </div>
         <div className="scroll-art-card rounded-[2.5rem] border border-white/12 bg-white/10 p-6 backdrop-blur-md">
@@ -383,7 +393,7 @@ function SubscriptionSection({ locale }: { locale: Locale }) {
             ))}
           </div>
           <div className="mt-8">
-            <PrimaryCta>{locale === "ar" ? "اشترك شهرياً" : "Subscribe Monthly"}</PrimaryCta>
+            <PrimaryCta>{locale === "ar" ? "اشترك الآن" : "Subscribe"}</PrimaryCta>
           </div>
         </div>
       </div>
@@ -453,7 +463,7 @@ function FinalCTASection({ locale }: { locale: Locale }) {
           {locale === "ar" ? "احجز WIPER اليوم واحصل على غسيل سيارتك أينما كنت." : "Book WIPER today and get your car washed wherever you are."}
         </p>
         <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
-          <PrimaryCta>{locale === "ar" ? "احجز الآن" : "Book Now"}</PrimaryCta>
+          <PrimaryCta>{locale === "ar" ? "احجز غسيل" : "Book a Wash"}</PrimaryCta>
           <SecondaryCta href="#subscription" dark>
             {locale === "ar" ? "عرض الخدمات" : "View Services"}
           </SecondaryCta>
@@ -486,7 +496,9 @@ function ContactSection({ locale }: { locale: Locale }) {
       });
       if (!res.ok) throw new Error("fail");
       setFeedback(
-        locale === "ar" ? "تم الإرسال. سيصل تنبيه للإدارة وسنتواصل معك." : "Sent. Admin is notified and we will contact you.",
+        locale === "ar"
+          ? "تم الإرسال. وصلت الرسالة للإدارة مع تنبيه فوري."
+          : "Sent. Admin received your message with an instant notification.",
       );
       setName("");
       setPhone("");
@@ -506,8 +518,8 @@ function ContactSection({ locale }: { locale: Locale }) {
           title={locale === "ar" ? "رسالة لفريق WIPER" : "Message the WIPER team"}
           description={
             locale === "ar"
-              ? "أرسل لنا طلبك أو استفسارك — تصل إشعار فوري للإدارة."
-              : "Send a request or question — admins get an instant notification."
+              ? "اكتب رسالتك هنا — نحفظها في لوحة الإدارة مع تنبيه فوري للفريق، ويمكن ربط إشعار إضافي (ويب هوك) على الخادم عند الحاجة."
+              : "Type your message here — it is saved to the admin dashboard with an instant team notification, and your server can optionally forward it to another webhook."
           }
         />
         <form onSubmit={onSubmit} className="mx-auto mt-10 max-w-xl space-y-4">

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const order = await createOrder({
       customer: body.customer ?? "New customer",
       plateNumber: body.plateNumber ?? "QTR-00000",
-      service: body.service ?? "Outer wash",
+      service: body.service ?? "Quick Wipe",
       zone: body.zone ?? "West Bay",
       day: body.day ?? "Sunday",
       slot: body.slot ?? "15:00 - 16:00",

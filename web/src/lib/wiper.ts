@@ -11,11 +11,12 @@ export type ServiceOption = {
   id: string;
   label: Record<Locale, string>;
   description: Record<Locale, string>;
+  /** Minimum price in QAR (used at checkout). */
   price: number;
+  /** When set, UI shows a price band (e.g. 55–65). */
+  priceMax?: number;
   durationMinutes: number;
   kind: ServiceKind;
-  /** Stable ids for polish add-on choices (matches `polishOptionDefs`). */
-  polishOptionIds?: string[];
 };
 
 export type Worker = {
@@ -66,68 +67,63 @@ export const brand = {
 
 export const services: ServiceOption[] = [
   {
-    id: "outer",
-    label: { en: "Outer wash", ar: "غسيل خارجي" },
+    id: "quick-wipe",
+    label: { en: "Quick Wipe", ar: "مسحة سريعة" },
     description: {
-      en: "Fast exterior clean for a sharp daily finish.",
-      ar: "تنظيف خارجي سريع لمظهر يومي أنيق.",
+      en: "Inside · Outside — fast refresh.",
+      ar: "داخل · خارج — انتعاش سريع.",
     },
-    price: 45,
+    price: 55,
+    priceMax: 65,
     durationMinutes: 45,
     kind: "single",
   },
   {
-    id: "inner-outer",
-    label: { en: "Outer + inner", ar: "غسيل خارجي وداخلي" },
+    id: "wax-wipe",
+    label: { en: "Wax Wipe", ar: "مسحة شمعية" },
     description: {
-      en: "Complete cabin and body wash.",
-      ar: "تنظيف كامل للمقصورة والهيكل.",
+      en: "Inside · Outside · wax shine for a couple of days.",
+      ar: "داخل · خارج · لمعان شمعي لعدة أيام.",
     },
-    price: 80,
-    durationMinutes: 75,
+    price: 75,
+    priceMax: 85,
+    durationMinutes: 60,
     kind: "single",
   },
   {
-    id: "vip",
-    label: { en: "VIP wash", ar: "غسيل VIP" },
+    id: "deep-wipe",
+    label: { en: "Deep Wipe", ar: "مسحة عميقة" },
     description: {
-      en: "Premium detail with extra care on finish and cabin.",
-      ar: "تنظيف فاخر بعناية إضافية للهيكل والمقصورة.",
+      en: "Inside · Outside · wax · vacuum · sanitize · engine wash (on request) · perfuming.",
+      ar: "داخل · خارج · شمع · مكنسة · تعقيم · غسيل محرك (حسب الطلب) · عطور.",
     },
-    price: 150,
+    price: 100,
+    priceMax: 120,
     durationMinutes: 120,
     kind: "single",
   },
   {
-    id: "polish",
-    label: { en: "Polish", ar: "تلميع" },
+    id: "sub-4-row",
+    label: { en: "4 in a row", ar: "٤ متتالية" },
     description: {
-      en: "Choose the exact areas you want polished.",
-      ar: "اختر المناطق التي تريد تلميعها.",
+      en: "1 Quick Wipe per week (4 visits per billing period).",
+      ar: "مسحة سريعة واحدة أسبوعياً (٤ زيارات لكل فترة).",
     },
-    price: 60,
-    durationMinutes: 90,
-    kind: "single",
-    polishOptionIds: [
-      "inner",
-      "outer",
-      "inner-outer",
-      "frontal",
-      "engine",
-      "rings",
-      "windshield",
-      "single-side-glass",
-    ],
+    price: 210,
+    priceMax: 250,
+    durationMinutes: 45,
+    kind: "subscription",
   },
   {
-    id: "monthly",
-    label: { en: "Monthly subscription", ar: "اشتراك شهري" },
+    id: "sub-8-pool",
+    label: { en: "8 pool", ar: "٨ حزمة" },
     description: {
-      en: "Weekly inner + outer wash on your selected day.",
-      ar: "غسيل داخلي وخارجي أسبوعي في اليوم الذي تختاره.",
+      en: "2 Quick Wipes per week — can be used for 2 cars.",
+      ar: "مسحتان سريعتان أسبوعياً — يمكن استخدامهما لسيارتين.",
     },
-    price: 280,
-    durationMinutes: 75,
+    price: 420,
+    priceMax: 500,
+    durationMinutes: 90,
     kind: "subscription",
   },
 ];
@@ -224,17 +220,6 @@ export function combinedLocalDateTime(isoDate: string, slot: string): Date {
   return d;
 }
 
-export const polishOptionDefs: { id: string; label: Record<Locale, string> }[] = [
-  { id: "inner", label: { en: "Inner", ar: "داخلي" } },
-  { id: "outer", label: { en: "Outer", ar: "خارجي" } },
-  { id: "inner-outer", label: { en: "Inner + outer", ar: "داخلي + خارجي" } },
-  { id: "frontal", label: { en: "Frontal", ar: "أمامي" } },
-  { id: "engine", label: { en: "Engine", ar: "المحرك" } },
-  { id: "rings", label: { en: "Rings", ar: "الحلقات" } },
-  { id: "windshield", label: { en: "Windshield", ar: "الزجاج الأمامي" } },
-  { id: "single-side-glass", label: { en: "Single side glass", ar: "زجاج جانبي واحد" } },
-];
-
 export const bookCopy = {
   back: { en: "Back", ar: "رجوع" },
   /** Shown when UI is English — switches to Arabic. */
@@ -245,31 +230,30 @@ export const bookCopy = {
   choiceTitle: { en: "What kind of wash do you need?", ar: "ما نوع الغسيل الذي تحتاجه؟" },
   subscriptionCardTitle: { en: "Subscription", ar: "اشتراك" },
   subscriptionCardBody: {
-    en: "Weekly wash, same selected day, monthly payment.",
-    ar: "غسيل أسبوعي، نفس اليوم المختار، دفع شهري.",
+    en: "4 in a row or 8 pool — Quick Wipe visits on your schedule.",
+    ar: "٤ متتائية أو حزمة ٨ — زيارات مسحة سريعة حسب موعدك.",
   },
   oneTimeCardTitle: { en: "One time", ar: "مرة واحدة" },
   oneTimeCardBody: {
-    en: "Pick the service you want today and pay once.",
-    ar: "اختر الخدمة التي تريدها اليوم وادفع مرة واحدة.",
+    en: "Quick Wipe, Wax Wipe, or Deep Wipe — pay once.",
+    ar: "مسحة سريعة، مسحة شمعية، أو مسحة عميقة — ادفع مرة واحدة.",
   },
   singleKicker: { en: "One time service", ar: "خدمة لمرة واحدة" },
   singleTitle: { en: "Choose your service.", ar: "اختر خدمتك." },
-  polishKicker: { en: "Polish", ar: "تلميع" },
-  polishTitle: { en: "What type?", ar: "أي نوع؟" },
   continue: { en: "Continue", ar: "متابعة" },
   subscriptionKicker: { en: "Subscription", ar: "اشتراك" },
+  pickPlanTitle: { en: "Pick your plan.", ar: "اختر باقتك." },
   subscriptionHeroTitle: {
-    en: "Weekly inner and outer wash.",
-    ar: "غسيل داخلي وخارجي أسبوعي.",
+    en: "Quick Wipe subscriptions.",
+    ar: "اشتراكات المسحة السريعة.",
   },
   subscriptionHeroBody: {
-    en: "Subscription is limited to inner and outer washes. You pay once per month, choose a weekly day and time window, and WIPER creates recurring work orders for the staff.",
-    ar: "الاشتراك مقتصر على الغسيل الداخلي والخارجي. تدفع مرة شهرياً، تختار يوماً أسبوعياً وفترة زمنية، ويقوم WIPER بإنشاء أوامر عمل متكررة للفريق.",
+    en: "Choose 4 in a row (1 Quick Wipe per week) or 8 pool (2 per week, can cover two cars). Pick your day, time window, and pay once per billing period.",
+    ar: "اختر ٤ متتالية (مسحة سريعة أسبوعياً) أو حزمة ٨ (مسحتان أسبوعياً، يمكن لسيارتين). اختر اليوم والفترة وادفع مرة لكل فترة.",
   },
   subscriptionTerms: {
-    en: "I agree to the monthly subscription terms.",
-    ar: "أوافق على شروط الاشتراك الشهري.",
+    en: "I agree to the subscription terms.",
+    ar: "أوافق على شروط الاشتراك.",
   },
   detailsKicker: { en: "Final step", ar: "الخطوة الأخيرة" },
   detailsTitle: { en: "Info, schedule, payment.", ar: "البيانات، الموعد، الدفع." },
@@ -325,11 +309,11 @@ export const bookCopy = {
     en: "WIPER logo on navy background",
     ar: "شعار WIPER على خلفية كحلية",
   },
-  serviceIconOuter: { en: "OUT", ar: "خارجي" },
-  serviceIconInnerOuter: { en: "IN", ar: "د+خ" },
-  serviceIconVip: { en: "VIP", ar: "VIP" },
-  serviceIconPolish: { en: "POL", ar: "لم" },
-  serviceIconSub: { en: "SUB", ar: "شهر" },
+  serviceIconQuick: { en: "QK", ar: "س" },
+  serviceIconWax: { en: "WX", ar: "ش" },
+  serviceIconDeep: { en: "DP", ar: "ع" },
+  serviceIconSub4: { en: "4", ar: "٤" },
+  serviceIconSub8: { en: "8", ar: "٨" },
 } as const;
 
 function fillBookTemplate(template: string, vars: Record<string, string>) {
@@ -379,33 +363,33 @@ export const workOrders: WorkOrder[] = [
     id: "WO-2048",
     customer: "Maha Al Thani",
     plateNumber: "QTR-83417",
-    service: "VIP wash",
+    service: "Deep Wipe",
     status: "assigned",
     zone: "The Pearl",
     slot: "17:00 - 18:00",
     worker: "Omar Hassan",
-    amount: 150,
+    amount: 100,
   },
   {
     id: "WO-2049",
     customer: "Fahad Al Kuwari",
     plateNumber: "QTR-55092",
-    service: "Monthly subscription",
+    service: "Subscription · 8 pool",
     status: "new",
     zone: "West Bay",
     slot: "18:00 - 19:00",
-    amount: 280,
+    amount: 420,
   },
   {
     id: "WO-2050",
     customer: "Noora Saleh",
     plateNumber: "QTR-21944",
-    service: "Outer + inner",
+    service: "Wax Wipe",
     status: "in_progress",
     zone: "Lusail",
     slot: "16:00 - 17:00",
     worker: "Khaled Nasser",
-    amount: 80,
+    amount: 75,
   },
 ];
 
@@ -423,12 +407,15 @@ export function formatQar(amount: number, locale: Locale = "en") {
   }).format(amount);
 }
 
-export function calculatePrice(serviceId: string, polishCount: number) {
+/** Display a QAR price band (e.g. 55–65). */
+export function formatQarRange(locale: Locale, min: number, max: number) {
+  if (min === max || !Number.isFinite(max)) return formatQar(min, locale);
+  return `${formatQar(min, locale)}–${formatQar(max, locale)}`;
+}
+
+export function calculatePrice(serviceId: string) {
   const service = services.find((item) => item.id === serviceId);
-  if (!service) return 0;
-  return service.id === "polish"
-    ? service.price + Math.max(0, polishCount - 1) * 25
-    : service.price;
+  return service?.price ?? 0;
 }
 
 export function isSlotAvailable(slot: string) {
