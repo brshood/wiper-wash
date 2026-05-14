@@ -488,13 +488,42 @@ function ContactSection({ locale }: { locale: Locale }) {
       return;
     }
     setBusy(true);
-    try {
-      const res = await fetch("/api/inquiries", {
+    const payload = { name, phone, message };
+    const endpoint = new URL("/api/inquiries", window.location.origin).toString();
+
+    async function postOnce() {
+      return fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, message }),
+        body: JSON.stringify(payload),
+        cache: "no-store",
+        credentials: "same-origin",
       });
-      if (!res.ok) throw new Error("fail");
+    }
+
+    try {
+      let res = await postOnce();
+      if (!res.ok && res.status >= 500) {
+        await new Promise((r) => setTimeout(r, 400));
+        res = await postOnce();
+      }
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => null)) as { error?: string } | null;
+        const serverMsg = typeof errBody?.error === "string" ? errBody.error.trim() : "";
+        if (res.status === 400) {
+          setFeedback(
+            serverMsg ||
+              (locale === "ar" ? "تحقق من الحقول المطلوبة." : "Check the required fields."),
+          );
+          return;
+        }
+        setFeedback(
+          locale === "ar"
+            ? `تعذر الإرسال (${res.status}). ${serverMsg ? serverMsg.slice(0, 120) : "حاول لاحقاً."}`
+            : `Could not send (${res.status}). ${serverMsg ? serverMsg.slice(0, 120) : "Please try again later."}`,
+        );
+        return;
+      }
       setFeedback(
         locale === "ar"
           ? "تم الإرسال. وصلت الرسالة للإدارة مع تنبيه فوري."
@@ -504,7 +533,7 @@ function ContactSection({ locale }: { locale: Locale }) {
       setPhone("");
       setMessage("");
     } catch {
-      setFeedback(locale === "ar" ? "تعذر الإرسال. حاول مرة أخرى." : "Could not send. Please try again.");
+      setFeedback(locale === "ar" ? "تعذر الإرسال. تحقق من الاتصال وحاول مرة أخرى." : "Could not send. Check your connection and try again.");
     } finally {
       setBusy(false);
     }

@@ -321,21 +321,31 @@ export function detectZone(address: string) {
   return inferZone(address);
 }
 
+function sortedInMemoryInquiries() {
+  return [...inMemoryStore().inquiries].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+}
+
 export async function listInquiries() {
+  const memory = sortedInMemoryInquiries();
   try {
     const db = await getDb();
-    return (await db
+    const fromDb = (await db
       .collection<InquiryRecord>("inquiries")
       .find({})
       .sort({ createdAt: -1 })
       .limit(100)
       .toArray()) as InquiryRecord[];
-  } catch (error) {
-    if (!allowMongoInMemoryFallback()) throw error;
-    console.warn("[wiper] listInquiries: Mongo unavailable, using in-memory store.", error);
-    return [...inMemoryStore().inquiries].sort(
+    const merged = new Map<string, InquiryRecord>();
+    for (const row of fromDb) merged.set(row.id, row);
+    for (const row of memory) merged.set(row.id, row);
+    return Array.from(merged.values()).sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+    ).slice(0, 100);
+  } catch (error) {
+    console.warn("[wiper] listInquiries: Mongo unavailable; returning in-memory inquiries only.", error);
+    return memory;
   }
 }
 
@@ -352,8 +362,10 @@ export async function createInquiry(input: { name: string; phone: string; messag
     const db = await getDb();
     await db.collection<InquiryRecord>("inquiries").insertOne(inquiry);
   } catch (error) {
-    if (!allowMongoInMemoryFallback()) throw error;
-    console.warn("[wiper] createInquiry: Mongo unavailable, using in-memory store.", error);
+    console.error(
+      "[wiper] createInquiry: Mongo insert failed; keeping inquiry in process memory so the form still succeeds.",
+      error,
+    );
     inMemoryStore().inquiries.unshift(inquiry);
   }
 
