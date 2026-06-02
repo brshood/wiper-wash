@@ -97,18 +97,6 @@ export const services: ServiceOption[] = [
     kind: "single",
   },
   {
-    id: "deep-wipe",
-    label: { en: "Deep Wipe", ar: "مسحة عميقة" },
-    description: {
-      en: "Inside · Outside · wax · vacuum · sanitize · engine wash (on request) · perfuming.",
-      ar: "داخل · خارج · شمع · مكنسة · تعقيم · غسيل محرك (حسب الطلب) · عطور.",
-    },
-    price: 100,
-    priceMax: 120,
-    durationMinutes: 120,
-    kind: "single",
-  },
-  {
     id: "sub-4-row",
     label: { en: "4 in a row", ar: "٤ متتالية" },
     description: {
@@ -241,8 +229,8 @@ export const bookCopy = {
   },
   oneTimeCardTitle: { en: "One time", ar: "مرة واحدة" },
   oneTimeCardBody: {
-    en: "Quick Wipe, Wax Wipe, or Deep Wipe — pay once.",
-    ar: "مسحة سريعة، مسحة شمعية، أو مسحة عميقة — ادفع مرة واحدة.",
+    en: "Quick Wipe or Wax Wipe — pay once.",
+    ar: "مسحة سريعة أو مسحة شمعية — ادفع مرة واحدة.",
   },
   vehicleKicker: { en: "Vehicle type", ar: "نوع المركبة" },
   vehicleTitle: { en: "Salon or SUV?", ar: "سيدان أم دفع رباعي؟" },
@@ -381,7 +369,7 @@ export const workOrders: WorkOrder[] = [
     id: "WO-2048",
     customer: "Maha Al Thani",
     plateNumber: "QTR-83417",
-    service: "Deep Wipe",
+    service: "Quick Wipe",
     status: "assigned",
     zone: "The Pearl",
     slot: "17:00 - 18:00",
@@ -431,10 +419,9 @@ export function formatQarRange(locale: Locale, min: number, max: number) {
   return `${formatQar(min, locale)}–${formatQar(max, locale)}`;
 }
 
-/** Amount charged for a one-time service given salon (min) vs SUV (max of band). */
+/** Amount charged given salon (min) vs SUV (max of band). */
 export function priceForVehicleClass(service: ServiceOption | undefined, vehicleClass: VehicleClass): number {
   if (!service) return 0;
-  if (service.kind === "subscription") return service.price;
   return vehicleClass === "suv" ? (service.priceMax ?? service.price) : service.price;
 }
 

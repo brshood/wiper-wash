@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-error-response";
-import { services } from "@/lib/wiper";
+import { priceForVehicleClass, services, type VehicleClass } from "@/lib/wiper";
 import { createSubscription, listSubscriptions } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -24,10 +24,12 @@ export async function POST(request: Request) {
       zone?: string;
       scheduledDate?: string;
       planId?: string;
+      vehicleClass?: VehicleClass;
     };
     const planId = body.planId === "sub-8-pool" ? "sub-8-pool" : "sub-4-row";
     const plan = services.find((service) => service.id === planId && service.kind === "subscription");
-    const amount = plan?.price ?? 0;
+    const vehicleClass: VehicleClass = body.vehicleClass === "suv" ? "suv" : "salon";
+    const amount = priceForVehicleClass(plan, vehicleClass);
     const visitCount = planId === "sub-8-pool" ? 8 : 4;
     const { subscription, generatedOrders } = await createSubscription({
       customer: body.customer ?? "guest",

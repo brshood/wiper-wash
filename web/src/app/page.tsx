@@ -6,9 +6,16 @@ import type { CSSProperties } from "react";
 import { useState, type FormEvent } from "react";
 import { HowItWorksFlashcards } from "@/components/HowItWorksFlashcards";
 import { LogoMontage } from "@/components/LogoMontage";
+import { PackagesModal } from "@/components/PackagesModal";
 import { usePreferredLocale, toggleLocale } from "@/lib/locale";
 import type { Locale } from "@/lib/wiper";
-import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL, INSTAGRAM_URL } from "@/lib/wiper";
+import {
+  CONTACT_PHONE_DISPLAY,
+  CONTACT_PHONE_TEL,
+  INSTAGRAM_URL,
+  formatQarRange,
+  services,
+} from "@/lib/wiper";
 
 const heroPrimaryCtaClass =
   "relative z-[60] touch-manipulation focus-ring rounded-full bg-[#FF007D] px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] text-white shadow-[0_20px_60px_rgba(255,0,125,0.32)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(255,0,125,0.42)] sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em]";
@@ -33,9 +40,19 @@ const howSteps: Record<Locale, Array<{ title: string; description: string }>> = 
   ],
 };
 
-const subscriptionFields: Record<Locale, string[]> = {
-  en: ["Preferred weekly day", "Customer name", "Phone number", "Service area", "Notes", "4 in a row or 8 pool"],
-  ar: ["اليوم الأسبوعي المفضل", "اسم العميل", "رقم الهاتف", "منطقة الخدمة", "ملاحظات", "٤ متتالية أو حزمة ٨"],
+const subscriptionIncludes: Record<Locale, string[]> = {
+  en: [
+    "Choose your preferred weekly day",
+    "Pick your arrival time window",
+    "Pay online per billing period",
+    "Automatic weekly work orders for staff",
+  ],
+  ar: [
+    "اختر يومك الأسبوعي المفضل",
+    "حدد نافذة وقت الوصول",
+    "ادفع أونلاين لكل فترة",
+    "أوامر عمل أسبوعية تلقائية للفريق",
+  ],
 };
 
 const benefits: Record<Locale, Array<{ title: string; description: string }>> = {
@@ -84,7 +101,7 @@ const faqs: Record<Locale, Array<{ question: string; answer: string }>> = {
   {
     question: "What one-time services do you offer?",
     answer:
-      "Quick Wipe (inside and outside), Wax Wipe (adds wax shine for a couple of days), and Deep Wipe (full package including vacuum, sanitize, optional engine wash, and perfuming).",
+      "Quick Wipe (inside and outside) and Wax Wipe (adds wax shine for a couple of days).",
   },
   {
     question: "What subscription plans are available?",
@@ -103,7 +120,7 @@ const faqs: Record<Locale, Array<{ question: string; answer: string }>> = {
   ar: [
     { question: "هل أحتاج لإحضار السيارة إلى مكان معين؟", answer: "لا، WIPER يصل إلى موقعك." },
     { question: "هل يمكنني حجز غسيل لمرة واحدة؟", answer: "نعم، يمكنك الحجز في أي وقت." },
-    { question: "ما خدمات المسحة لمرة واحدة؟", answer: "مسحة سريعة (داخل وخارج)، مسحة شمعية (لمعان لعدة أيام)، ومسحة عميقة (مكنسة وتعقيم وغسيل محرك عند الطلب وعطور)." },
+    { question: "ما خدمات المسحة لمرة واحدة؟", answer: "مسحة سريعة (داخل وخارج) ومسحة شمعية (لمعان لعدة أيام)." },
     {
       question: "ما باقات الاشتراك؟",
       answer: "٤ متتالية تشمل مسحة سريعة أسبوعياً. حزمة ٨ تشمل مسحتين أسبوعياً ويمكن استخدامهما لسيارتين.",
@@ -125,20 +142,29 @@ function SecondaryCta({
   children,
   href,
   dark = false,
+  onClick,
 }: {
   children: string;
-  href: string;
+  href?: string;
   dark?: boolean;
+  onClick?: () => void;
 }) {
+  const className = `focus-ring rounded-full px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] transition hover:-translate-y-0.5 sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em] ${
+    dark
+      ? "border border-white/18 bg-white/10 text-white"
+      : "border border-[#1E3951]/15 bg-white text-[#1E3951]"
+  }`;
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className}>
+        {children}
+      </button>
+    );
+  }
+
   return (
-    <a
-      href={href}
-      className={`focus-ring rounded-full px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] transition hover:-translate-y-0.5 sm:px-7 sm:py-4 sm:text-sm sm:tracking-[0.2em] ${
-        dark
-          ? "border border-white/18 bg-white/10 text-white"
-          : "border border-[#1E3951]/15 bg-white text-[#1E3951]"
-      }`}
-    >
+    <a href={href} className={className}>
       {children}
     </a>
   );
@@ -244,7 +270,15 @@ function Navbar({ locale, onToggleLocale }: { locale: Locale; onToggleLocale: ()
   );
 }
 
-function HeroSection({ locale, onToggleLocale }: { locale: Locale; onToggleLocale: () => void }) {
+function HeroSection({
+  locale,
+  onToggleLocale,
+  onOpenPackages,
+}: {
+  locale: Locale;
+  onToggleLocale: () => void;
+  onOpenPackages: () => void;
+}) {
   return (
     <section className="relative isolate overflow-hidden bg-white">
       <WiperWave className="absolute inset-x-0 bottom-0 top-auto z-0 h-[24rem]" />
@@ -274,7 +308,7 @@ function HeroSection({ locale, onToggleLocale }: { locale: Locale; onToggleLocal
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:mt-9 sm:flex-row sm:gap-4">
             <PrimaryCta>{locale === "ar" ? "احجز غسيل" : "Book a Wash"}</PrimaryCta>
-            <SecondaryCta href="#subscription">
+            <SecondaryCta onClick={onOpenPackages}>
               {locale === "ar" ? "عرض الباقات" : "View Packages"}
             </SecondaryCta>
           </div>
@@ -300,7 +334,7 @@ function HeroSection({ locale, onToggleLocale }: { locale: Locale; onToggleLocal
                 alt="WIPER branded mobile car wash van"
                 className="hero-van-image h-[22rem] w-full object-contain object-center drop-shadow-[0_30px_34px_rgba(30,57,81,0.22)] sm:h-[34rem] sm:drop-shadow-[0_38px_46px_rgba(30,57,81,0.24)]"
                 height={1080}
-                src="/pic_ref/wipervan2.png?v=2"
+                src="/pic_ref/wipervan2.png?v=3"
                 unoptimized
                 width={1920}
               />
@@ -357,45 +391,67 @@ function HowItWorksSection({ locale }: { locale: Locale }) {
 }
 
 function SubscriptionSection({ locale }: { locale: Locale }) {
+  const subscriptionPlans = services.filter((service) => service.kind === "subscription");
+
   return (
     <section
       id="subscription"
       className="relative overflow-hidden bg-[#1E3951] py-20 text-white"
     >
       <WiperWave dark className="absolute -left-40 bottom-0 z-0 h-[30rem] w-[130vw]" />
-      <div className="relative z-10 mx-auto grid max-w-7xl gap-10 px-6 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:px-10">
-        <div>
-          <SectionHeading
-            eyebrow={locale === "ar" ? "اشتراك" : "Subscription"}
-            title={locale === "ar" ? "اشتراكات المسحة السريعة" : "Quick Wipe subscriptions"}
-            description={
-              locale === "ar"
-                ? "٤ متتالية (مسحة سريعة أسبوعياً) أو حزمة ٨ (مسحتان أسبوعياً، يمكن لسيارتين). اختر يومك ووقت الزيارة وادفع لكل فترة."
-                : "4 in a row (one Quick Wipe per week) or 8 pool (two per week, can cover two cars). Pick your day, arrival window, and pay per billing period."
-            }
-            light
-          />
-          <div className="rounded-[2rem] border border-[#FF007D]/35 bg-[#FF007D]/12 p-6 text-lg font-black leading-8">
-            {locale === "ar"
-              ? "٤ متتالية: ٢١٠–٢٥٠ ر.ق. حزمة ٨: ٤٢٠–٥٠٠ ر.ق."
-              : "4 in a row: 210–250 QAR. 8 pool: 420–500 QAR."}
-          </div>
-        </div>
-        <div className="scroll-art-card rounded-[2.5rem] border border-white/12 bg-white/10 p-6 backdrop-blur-md">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {subscriptionFields[locale].map((field) => (
-              <div
-                key={field}
-                className="rounded-2xl border border-white/10 bg-white px-4 py-4 text-sm font-black text-[#1E3951]"
+      <div className="relative z-10 mx-auto max-w-7xl px-6 sm:px-8 lg:px-10">
+        <SectionHeading
+          eyebrow={locale === "ar" ? "اشتراك" : "Subscription"}
+          title={locale === "ar" ? "اشتراكات المسحة السريعة" : "Quick Wipe subscriptions"}
+          description={
+            locale === "ar"
+              ? "مسحة سريعة أسبوعياً — اختر الباقة المناسبة لك وادفع لكل فترة."
+              : "Weekly Quick Wipe — pick the plan that fits you and pay per billing period."
+          }
+          light
+        />
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          {subscriptionPlans.map((plan) => (
+            <article
+              key={plan.id}
+              className="scroll-art-card flex flex-col rounded-[2rem] border border-white/14 bg-white p-6 text-[#1E3951] sm:p-8"
+            >
+              <p className="text-xs font-black uppercase tracking-[0.32em] text-[#FF007D]">
+                {locale === "ar" ? "باقة اشتراك" : "Subscription plan"}
+              </p>
+              <h3 className="mt-3 text-2xl font-black tracking-[-0.04em] sm:text-3xl">
+                {plan.label[locale]}
+              </h3>
+              <p className="mt-3 flex-1 text-sm leading-6 text-[#1E3951]/66 sm:text-base sm:leading-7">
+                {plan.description[locale]}
+              </p>
+              <p className="mt-5 text-2xl font-black text-[#FF007D] sm:text-3xl">
+                {formatQarRange(locale, plan.price, plan.priceMax ?? plan.price)}
+              </p>
+              <Link
+                href="/book"
+                className="focus-ring mt-6 inline-block rounded-full bg-[#1E3951] px-6 py-3.5 text-center text-xs font-black uppercase tracking-[0.18em] text-white transition hover:-translate-y-0.5"
               >
-                {field}
-              </div>
-            ))}
-          </div>
-          <div className="mt-8">
-            <PrimaryCta>{locale === "ar" ? "اشترك الآن" : "Subscribe"}</PrimaryCta>
-          </div>
+                {locale === "ar" ? "اشترك الآن" : "Subscribe"}
+              </Link>
+            </article>
+          ))}
         </div>
+
+        <ul className="mt-10 grid gap-3 sm:grid-cols-2">
+          {subscriptionIncludes[locale].map((item) => (
+            <li
+              key={item}
+              className="flex items-start gap-3 rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-sm font-bold text-white/88"
+            >
+              <span className="mt-0.5 shrink-0 text-[#FF007D]" aria-hidden>
+                ✓
+              </span>
+              {item}
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
@@ -448,7 +504,13 @@ function FAQSection({ locale }: { locale: Locale }) {
   );
 }
 
-function FinalCTASection({ locale }: { locale: Locale }) {
+function FinalCTASection({
+  locale,
+  onOpenPackages,
+}: {
+  locale: Locale;
+  onOpenPackages: () => void;
+}) {
   return (
     <section className="relative overflow-hidden bg-[#1E3951] px-6 py-20 text-center text-white sm:px-8 lg:px-10">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#FF007D33,transparent_34%)]" />
@@ -464,8 +526,8 @@ function FinalCTASection({ locale }: { locale: Locale }) {
         </p>
         <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
           <PrimaryCta>{locale === "ar" ? "احجز غسيل" : "Book a Wash"}</PrimaryCta>
-          <SecondaryCta href="#subscription" dark>
-            {locale === "ar" ? "عرض الخدمات" : "View Services"}
+          <SecondaryCta onClick={onOpenPackages} dark>
+            {locale === "ar" ? "عرض الباقات" : "View Packages"}
           </SecondaryCta>
           <a
             href={INSTAGRAM_URL}
@@ -644,17 +706,27 @@ function Footer({ locale }: { locale: Locale }) {
 
 export default function Home() {
   const { locale, setLocale, isRtl } = usePreferredLocale("en");
+  const [packagesOpen, setPackagesOpen] = useState(false);
 
   return (
     <main dir={isRtl ? "rtl" : "ltr"} className="landing-page min-h-screen overflow-x-hidden bg-[#f7f7f6] text-[#1E3951]">
       <LogoMontage />
-      <HeroSection locale={locale} onToggleLocale={() => setLocale((current) => toggleLocale(current))} />
+      <PackagesModal
+        open={packagesOpen}
+        locale={locale}
+        onClose={() => setPackagesOpen(false)}
+      />
+      <HeroSection
+        locale={locale}
+        onToggleLocale={() => setLocale((current) => toggleLocale(current))}
+        onOpenPackages={() => setPackagesOpen(true)}
+      />
       <HowItWorksSection locale={locale} />
       <SubscriptionSection locale={locale} />
       <WhyWiperSection locale={locale} />
       <FAQSection locale={locale} />
       <ContactSection locale={locale} />
-      <FinalCTASection locale={locale} />
+      <FinalCTASection locale={locale} onOpenPackages={() => setPackagesOpen(true)} />
       <Footer locale={locale} />
     </main>
   );

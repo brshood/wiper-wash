@@ -11,7 +11,6 @@ import {
   formatISODateLocal,
   formatPromoAppliedMessage,
   formatQar,
-  formatQarRange,
   isSlotAvailable,
   priceForVehicleClass,
   services,
@@ -73,8 +72,6 @@ function serviceCardAbbrev(serviceId: string, loc: Locale) {
       return bookCopy.serviceIconQuick[loc];
     case "wax-wipe":
       return bookCopy.serviceIconWax[loc];
-    case "deep-wipe":
-      return bookCopy.serviceIconDeep[loc];
     case "sub-4-row":
       return bookCopy.serviceIconSub4[loc];
     case "sub-8-pool":
@@ -153,13 +150,10 @@ export default function BookPage() {
     const open = timeSlots.filter((item) => isSlotAvailable(item));
     return open.length > 0 ? open : timeSlots;
   }, []);
-  const amount = useMemo(() => {
-    if (kind === "subscription") {
-      const sub = services.find((s) => s.id === serviceId && s.kind === "subscription");
-      return sub?.price ?? 210;
-    }
-    return calculatePrice(serviceId, vehicleClass);
-  }, [kind, serviceId, vehicleClass]);
+  const amount = useMemo(
+    () => calculatePrice(serviceId, vehicleClass),
+    [serviceId, vehicleClass],
+  );
   const promoResult = useMemo(
     () => calculatePromoDiscount(amount, appliedPromo),
     [amount, appliedPromo],
@@ -197,16 +191,17 @@ export default function BookPage() {
 
     setServiceId("sub-4-row");
     setAgreed(false);
-    setStep("subscription");
+    setVehicleClass("salon");
+    setStep("vehicle-type");
   }
 
   function goBack() {
     if (step === "choice") return;
-    if (step === "vehicle-type" || step === "subscription") {
+    if (step === "vehicle-type") {
       setStep("choice");
       return;
     }
-    if (step === "single-service") {
+    if (step === "subscription" || step === "single-service") {
       setStep("vehicle-type");
       return;
     }
@@ -233,6 +228,7 @@ export default function BookPage() {
             zone,
             scheduledDate: serviceDate,
             planId: serviceId,
+            vehicleClass,
           }),
         });
 
@@ -394,7 +390,7 @@ export default function BookPage() {
                   className="mobile-fit-card focus-ring rounded-[2rem] border border-[#1E3951]/10 bg-white p-5 text-center shadow-[0_24px_70px_rgba(30,57,81,0.10)] transition hover:-translate-y-1 sm:p-8"
                   onClick={() => {
                     setVehicleClass("salon");
-                    setStep("single-service");
+                    setStep(kind === "subscription" ? "subscription" : "single-service");
                   }}
                 >
                   <div className="mx-auto grid h-16 w-16 place-items-center rounded-[1.35rem] bg-[#FF007D] text-lg font-black text-white shadow-[0_14px_35px_rgba(255,0,125,0.22)] sm:h-20 sm:w-20 sm:text-xl">
@@ -410,7 +406,7 @@ export default function BookPage() {
                   className="mobile-fit-card focus-ring rounded-[2rem] border border-[#1E3951]/10 bg-white p-5 text-center shadow-[0_24px_70px_rgba(30,57,81,0.10)] transition hover:-translate-y-1 sm:p-8"
                   onClick={() => {
                     setVehicleClass("suv");
-                    setStep("single-service");
+                    setStep(kind === "subscription" ? "subscription" : "single-service");
                   }}
                 >
                   <div className="mx-auto grid h-16 w-16 place-items-center rounded-[1.35rem] bg-[#1E3951] text-xs font-black tracking-[0.08em] text-white shadow-[0_14px_35px_rgba(30,57,81,0.22)] sm:h-20 sm:w-20 sm:text-sm">
@@ -488,6 +484,22 @@ export default function BookPage() {
                 <p className="mt-3 text-sm font-black text-[#1E3951]/72 sm:text-base">
                   {bookCopy.subscriptionHeroTitle[locale]}
                 </p>
+                <div className="mx-auto mt-4 flex max-w-xl gap-2 sm:mx-0">
+                  {(["salon", "suv"] as const).map((vc) => (
+                    <button
+                      key={vc}
+                      type="button"
+                      onClick={() => setVehicleClass(vc)}
+                      className={`focus-ring flex-1 rounded-full px-4 py-2.5 text-xs font-black uppercase tracking-[0.12em] transition ${
+                        vehicleClass === vc
+                          ? "bg-[#FF007D] text-white"
+                          : "border border-[#1E3951]/15 bg-white text-[#1E3951]"
+                      }`}
+                    >
+                      {vc === "salon" ? bookCopy.vehicleSalonTitle[locale] : bookCopy.vehicleSuvTitle[locale]}
+                    </button>
+                  ))}
+                </div>
                 <div className="mx-auto mt-5 grid max-w-xl grid-cols-1 gap-3 sm:mx-0 sm:grid-cols-2">
                   {subscriptionPlans.map((plan) => (
                     <button
@@ -506,7 +518,7 @@ export default function BookPage() {
                         {plan.description[locale]}
                       </span>
                       <span className="mt-3 text-base font-black text-[#FF007D] sm:text-lg">
-                        {formatQarRange(locale, plan.price, plan.priceMax ?? plan.price)}
+                        {formatQar(priceForVehicleClass(plan, vehicleClass), locale)}
                       </span>
                     </button>
                   ))}
@@ -553,6 +565,24 @@ export default function BookPage() {
                     onClose={() => setLocationModalOpen(false)}
                     onSelect={setZone}
                   />
+                  {kind === "subscription" && (
+                    <div className="mb-3 flex gap-2">
+                      {(["salon", "suv"] as const).map((vc) => (
+                        <button
+                          key={vc}
+                          type="button"
+                          onClick={() => setVehicleClass(vc)}
+                          className={`focus-ring flex-1 rounded-full px-3 py-2 text-[0.65rem] font-black uppercase tracking-[0.1em] sm:text-xs ${
+                            vehicleClass === vc
+                              ? "bg-[#FF007D] text-white"
+                              : "border border-[#1E3951]/15 bg-[#f7f7f6] text-[#1E3951]"
+                          }`}
+                        >
+                          {vc === "salon" ? bookCopy.vehicleSalonTitle[locale] : bookCopy.vehicleSuvTitle[locale]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-2 sm:gap-4">
                     <input
                       className="focus-ring w-full rounded-2xl border-2 border-[#FF007D]/55 bg-[#f7f7f6] px-3 py-2.5 text-sm font-black text-[#1E3951] placeholder:text-[#1E3951]/38 sm:px-4 sm:py-4"
@@ -707,15 +737,13 @@ export default function BookPage() {
                       <span>{bookCopy.service[locale]}</span>
                       <strong className="text-end text-white">
                         {selectedService?.label[locale] ?? bookCopy.notSelected[locale]}
-                        {kind === "single"
-                          ? locale === "ar"
-                            ? vehicleClass === "suv"
-                              ? " · دفع رباعي"
-                              : " · سيدان"
-                            : vehicleClass === "suv"
-                              ? " · SUV"
-                              : " · Salon"
-                          : ""}
+                        {locale === "ar"
+                          ? vehicleClass === "suv"
+                            ? " · دفع رباعي"
+                            : " · سيدان"
+                          : vehicleClass === "suv"
+                            ? " · SUV"
+                            : " · Salon"}
                       </strong>
                     </div>
                     <div className="flex justify-between gap-4">
